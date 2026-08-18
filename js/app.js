@@ -177,11 +177,6 @@ globalThis.structRemoteUser = [
         type:  "text",
     },
     {
-        name:  "password",
-        hint:  "Your password for access",
-        type:  "text",
-    },    
-    {
         name:  "address",
         alias: "Remote database server address",
         hint:  "alfille.online -- don't include database name",
@@ -404,7 +399,6 @@ class DatabaseManager { // convenience class
     constructor() {
         // remoteCouch contents
         this.username = null ;
-        this.password = null ;
         this.database = null ;
         this.address  = null ;
         this.local    = null ;
@@ -417,11 +411,11 @@ class DatabaseManager { // convenience class
     }
     
     load() {
-        ["username","password","database","address","local"].forEach( x => this[x]=globalStorage.local_get(x) );
+        ["username","database","address","local"].forEach( x => this[x]=globalStorage.local_get(x) );
     }
     
     store() {
-        ["username","password","database","address","local"].forEach( x => globalStorage.local_set(x,this[x]) );
+        ["username","database","address","local"].forEach( x => globalStorage.local_set(x,this[x]) );
     }
     
     acquire_and_listen() {        
@@ -429,13 +423,13 @@ class DatabaseManager { // convenience class
         this.load();
         const cookie = globalStorage.get("remoteCouch");
         if ( cookie !== null ) { // legacy
-            ["username","password","database","address"].forEach( x => this[x] = this[x] ?? cookie[x] );
+            ["username","database","address"].forEach( x => this[x] = this[x] ?? cookie[x] );
             globalStorage.del("remoteCouch") ;
         }
             
         // Get Remote DB fron command line if available
         const params = new URL(location.href).searchParams;
-        ["username","password","database","address","local"].forEach( c => {
+        ["username","database","address","local"].forEach( c => {
             const gc = params.get(c) ;
             if ( ( gc!==null ) && ( gc !== this[c] ) ) {
                 this[c] = gc ;
@@ -480,13 +474,9 @@ class DatabaseManager { // convenience class
             return ;
         }
             
-        if ( this.username && this.password && this.database && this.address  ) {
+        if ( this.username && this.database && this.address  ) {
             this.remoteDB = new PouchDB( [this.address, this.database].join("/") , {
                 "skip_setup": "true",
-                "auth": {
-                    "username": this.username,
-                    "password": this.password,
-                    },
                 });
         } else {
             globalLog.err("Bad DB specification");
@@ -722,7 +712,7 @@ new class RemoteDatabaseInput extends Pagelist {
     show_content() {
         new TextBox("Your Credentials") ;
         const doc = {} ;
-        ["username","password","database","address","local"].forEach( x => doc[x] = globalDatabase[x] ) ;
+        ["username","database","address","local"].forEach( x => doc[x] = globalDatabase[x] ) ;
         doc.default_address=`${window.location.protocol}//${window.location.host}/couchdb`;
         doc.default_database=window.location.hostname.split(".")[0] ;
         globalPotData = new DatabaseData( doc, structRemoteUser );
@@ -746,7 +736,7 @@ new class MakeURL extends Pagelist {
             url = new URL( "/index.html", globalDatabase.address ) ;
             url.port = '';
         }
-        ["username","password","database","address","local"].forEach( x => url.searchParams.append( x, globalDatabase[x] ) );
+        ["username","database","address","local"].forEach( x => url.searchParams.append( x, globalDatabase[x] ) );
         new QRious( {
             value: url.toString(),
             element: document.getElementById("qr"),
@@ -765,7 +755,7 @@ new class MakeViewerURL extends Pagelist {
             url = new URL( "/viewer/index.html", globalDatabase.address ) ;
             url.port = '';
         }
-        ["username","password","database","address","local"].forEach( x => url.searchParams.append( x, globalDatabase[x] ) );
+        ["username","database","address","local"].forEach( x => url.searchParams.append( x, globalDatabase[x] ) );
         new QRious( {
             value: url.toString(),
             element: document.getElementById("qr"),
