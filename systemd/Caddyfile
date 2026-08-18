@@ -1,0 +1,47 @@
+alfille.art {
+        # Set this path to your site's directory.
+        root * /srv/www
+
+        # Enable the static file server.
+        file_server
+}
+
+alfille.art:5984 {
+        reverse_proxy localhost:15984
+}
+
+alfille.art:6984 {
+        reverse_proxy localhost:15984
+}
+
+alfille.online {
+        # Set this path to your site's directory.
+        root * /srv/potholder
+
+        # Enable the static file server.
+        file_server
+}
+
+alfille.online:5984 {
+        reverse_proxy localhost:15984
+}
+
+alfille.online:6984 {
+        reverse_proxy localhost:15984
+}
+
+147.185.239.227 {
+        # Set this path to your site's directory.
+        root * /srv/potholder
+
+        # Enable the static file server.
+        file_server
+}
+
+147.185.239.227:5984 {
+        reverse_proxy localhost:15984
+}
+
+147.185.239.227:6984 {
+        reverse_proxy localhost:15984
+}

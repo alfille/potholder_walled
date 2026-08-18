@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" media="screen" href="style/base.css">
+		<link rel="stylesheet" media="print" href="style/print.css" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+		<div id="crop_div">
+			<canvas id="under_canvas" width=350px height=600px></canvas>
+			<img id="crop_image" width=100% height=600px src="images/potholder.png">
+			<canvas id="crop_canvas" width=350px height=600px></canvas>
+			<div id="crop_buttons">
+				<span class="Darray_span">Drag edges</span>
+				<button class="divbutton" onclick="objectCrop.ok()" title="Crop complete">Ok</button>
+				<button class="divbutton" onclick="objectCrop.full()" title="Restore full picture">Full</button>
+				<button class="divbutton return" hiont="No changes">Cancel</button>
+			</div>
+		</div>
+	<!-- crop --> <script src="js/crop.js"></script>
+    </body>
+</html>
+    

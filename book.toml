@@ -1,0 +1,14 @@
+[book]
+authors = ["Paul Alfille"]
+language = "en"
+multilingual = false
+src = "src"
+title = "PotHolder"
+logo="images/potholder.png"
+
+[output.html]
+default-theme = "navy"
+
+[output.html.fold]
+enable=true
+

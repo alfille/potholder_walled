@@ -1,0 +1,63 @@
+{
+  "name": "Potholder Ceramic Artist Database",
+  "short_name": "potholder",
+  "version": "1.0.0",
+  "description": "Easy visual database for Ceramic Artists",
+  "icons": [
+  { 
+	  "src": "images/pot16x16.png",
+	  "sizes": "16x16",
+	  "type": "image/png"
+  },
+  { 
+	  "src": "images/pot32x32.png",
+	  "sizes": "32x32",
+	  "type": "image/png"
+  },
+  { 
+	  "src": "images/pot48x48.png",
+	  "sizes": "48x48",
+	  "type": "image/png"
+  },
+  { 
+	  "src": "images/pot64x64.png",
+	  "sizes": "64x64",
+	  "type": "image/png"
+  },
+  { 
+	  "src": "images/pot128x128.png",
+	  "sizes": "128x128",
+	  "type": "image/png"
+  },
+  { 
+	  "src": "images/pot192x192.png",
+	  "sizes": "192x192",
+	  "type": "image/png"
+  },
+  { 
+	  "src": "images/pot400.png",
+	  "sizes": "400x400",
+	  "type": "image/png"
+  }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alfille/potholder.git"
+  },
+  "keywords": [
+    "pottery",
+    "ceramics",
+    "database",
+    "pouchdb",
+    "potter",
+    "clay"
+  ],
+  "author": "Paul H Alfille",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alfille/potholder/issues"
+  },
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "homepage": "https://github.com/alfille/potholder#readme"
+}
