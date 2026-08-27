@@ -1220,6 +1220,21 @@ class Page { // singleton class
 
 globalPage = new Page();
 
+class Address {
+	constructor() {
+		this URL = new URL(window.location.href);
+		this.database_URL = new URL( window.location.href ) ;
+		this.database_URL.pathname = "/couchdb" ;
+		this.host = this.URL.hostname);
+		const [d, ...s] = this.host.split('.');
+		this.database = d ;
+		this.server = s.join('.');
+		
+	}
+}
+
+
+
 // Application starting point
 window.onload = () => {
     // Stuff into history to block browser BACK button
