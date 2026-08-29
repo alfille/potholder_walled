@@ -604,23 +604,8 @@ class Cookie { //convenience class
             return ls ;
         }
 
-        // legacy cookie
-        const cook_name = `${cname}=`;
-        let ret = null ;
-        decodeURIComponent(document.cookie).split('; ').filter( val => val.indexOf(cook_name) === 0 ).forEach( val => {
-            try {
-                ret = JSON.parse( val.substring(cook_name.length) );
-                }
-            catch(err) {
-                ret =  val.substring(cook_name.length);
-                }
-        });
-        this.set(cname,ret) ; // put in local storage
-        globalThis[cname] = ret;
-        // Now delete cookie version
-        // From https://www.w3schools.com/js/js_cookies.asp
-        document.cookie = `${cname}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=None; Secure; path=/;` ;
-        return ret;
+        // doesn't exist
+        return null;
     }
     
     local_get( cname ) {
@@ -1221,16 +1206,29 @@ class Page { // singleton class
 globalPage = new Page();
 
 class Address {
-	constructor() {
-		this URL = new URL(window.location.href);
-		this.database_URL = new URL( window.location.href ) ;
-		this.database_URL.pathname = "/couchdb" ;
-		this.host = this.URL.hostname);
-		const [d, ...s] = this.host.split('.');
-		this.database = d ;
-		this.server = s.join('.');
-		
-	}
+    constructor() {
+        this.url = new URL(window.location.href);
+        [this.database, this.server] = this.split_url(this.url);
+
+        this.database_url = new URL( window.location.href ) ;
+        this.database_url.pathname = "/couchdb" ;        
+        
+        this.store_url() ;
+    }
+    
+    split_url( url ) {
+        const [d, ...s] = url.host.split('.');
+        return [ d, s.join('.') ];
+    }
+    
+    database() {
+        return this.database ;
+    }
+    
+    store_url() {
+        globalStorage.set( "database", this.database ) ;
+        globalStorage.set( "server", this.server ) ;
+        
 }
 
 
