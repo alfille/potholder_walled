@@ -1231,10 +1231,44 @@ class Address {
         
 }
 
+class Username {
+    fresh() {
+        this.name = "Unknown" ;
+        globalStorage.set("username",name) ;
+    }
 
+    get_name() {
+        return this.fetchWithRetry('/api/me', 3, 1000)
+        .then((response) => response.json())
+        .then((user) => console.log('Loaded user:', user))
+        .catch((err) => ({
+            username: "Unknown",
+            name: "Unknown",
+            }) ;
+    };
+    
+    fetchWithRetry(url, retries = 3, delay = 1000) {
+        return fetch(url).catch((error) => {
+            if (retries > 0) {
+                console.warn(`Network error getting username. Retrying in ${delay}ms... (${retries} attempts left)`);
+                return new Promise((resolve) => setTimeout(resolve, delay))
+                .then(() => fetchWithRetry(url, retries - 1, delay * 2));
+            } else {
+                throw error ;
+        });
+    }
+}
+
+// Usage inside your profile loader
+fetchWithRetry('/api/me', 3, 1000)
+  .then((response) => response.json())
+  .then((user) => console.log('Loaded user:', user))
+  .catch((err) => alert(err.message));            
 
 // Application starting point
 window.onload = () => {
+    const n = new Username() ;
+    console.log(u.get_name() );
     // Stuff into history to block browser BACK button
     window.history.pushState({}, '');
     window.addEventListener('popstate', ()=>window.history.replaceState({}, '') );
