@@ -1261,12 +1261,6 @@ class Username {
         });
 }
 
-// Usage inside your profile loader
-fetchWithRetry('/api/me', 3, 1000)
-  .then((response) => response.json())
-  .then((user) => console.log('Loaded user:', user))
-  .catch((err) => alert(err.message));            
-
 // Application starting point
 window.onload = () => {
     const n = new Username() ;
