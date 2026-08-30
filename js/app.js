@@ -246,21 +246,22 @@ globalThis.structSettings = [
     }
 ] ;
 
-// globals cookie backed
+// globals storage backed
 globalThis. potId = null ;
 
 // singleton class instances
-globalThis. globalPage = null ;
-globalThis. globalPotData = null ;
-globalThis. globalTable = null ;
+globalThis. globalAddress  = null ;
+globalThis. globalCropper  = null ;
 globalThis. globalDatabase = null ;
-globalThis. globalLog = null ;
-globalThis. globalPot = null ;
-globalThis. globalStorage = null ;
-globalThis. globalSearch = null;
-globalThis. globalThumbs = null;
-globalThis. globalCropper = null ;
+globalThis. globalLog      = null ;
+globalThis. globalPage     = null ;
+globalThis. globalPot      = null ;
+globalThis. globalPotData  = null ;
+globalThis. globalSearch   = null;
 globalThis. globalSettings = {} ;
+globalThis. globalStorage  = null ;
+globalThis. globalTable    = null ;
+globalThis. globalThumbs   = null;
 
 globalThis. rightSize = ( imgW, imgH, limitW, limitH ) => {
     const h = limitW * imgH / imgW ;
@@ -418,26 +419,7 @@ class DatabaseManager { // convenience class
         ["username","database","address","local"].forEach( x => globalStorage.local_set(x,this[x]) );
     }
     
-    acquire_and_listen() {        
-        // Get remote DB from localStorage if available
-        this.load();
-        const cookie = globalStorage.get("remoteCouch");
-        if ( cookie !== null ) { // legacy
-            ["username","database","address"].forEach( x => this[x] = this[x] ?? cookie[x] );
-            globalStorage.del("remoteCouch") ;
-        }
-            
-        // Get Remote DB fron command line if available
-        const params = new URL(location.href).searchParams;
-        ["username","database","address","local"].forEach( c => {
-            const gc = params.get(c) ;
-            if ( ( gc!==null ) && ( gc !== this[c] ) ) {
-                this[c] = gc ;
-                globalPage.reset() ;               
-            }
-        });
-        this.store();
-             
+    acquire_and_listen() {    
         // set up monitoring
         window.addEventListener("offline", _ => this.not_present() );
         window.addEventListener("online", _ => this.present() );
@@ -451,8 +433,8 @@ class DatabaseManager { // convenience class
     }
     
     open() { // local
-        if ( this.database && (this.database !== "") ) {
-            this.db = new PouchDB( this.database, {auto_compaction: true} ); // open local copy
+        if ( globalThis.database && (globalThis.database !== "") ) {
+            this.db = new PouchDB( globalThis.database, {auto_compaction: true} ); // open local copy
         }
     }
 
@@ -467,21 +449,16 @@ class DatabaseManager { // convenience class
 
     // Initialise a sync process with the remote server
     foreverSync() {
-        document.getElementById( "userstatus" ).value = this.username;
+        //document.getElementById( "userstatus" ).value = this.username;
 
         if ( this.local=="true" ) { // local -- no sync
             this.status("good","Local database only (no replication)");
             return ;
         }
             
-        if ( this.username && this.database && this.address  ) {
-            this.remoteDB = new PouchDB( [this.address, this.database].join("/") , {
-                "skip_setup": "true",
-                });
-        } else {
-            globalLog.err("Bad DB specification");
-            this.remoteDB = null;
-        }
+        this.remoteDB = new PouchDB( globalAddress.database_url.href , {
+            "skip_setup": "true",
+            });
         if ( this.remoteDB ) {
             this.status( "good","download remote database");
             this.db.replicate.from( this.remoteDB )
@@ -1190,7 +1167,7 @@ class Address {
         this.url = new URL(window.location.href);
         [this.database, this.server] = this.split_url(this.url);
 
-        this.database_url = new URL( window.location.href ) ;
+        this.database_url = new URL( this.url.href ) ;
         this.database_url.pathname = "/couchdb" ;        
 
         // get stored url
