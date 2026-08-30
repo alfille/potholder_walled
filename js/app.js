@@ -1228,7 +1228,7 @@ class Address {
     store_url() {
         globalStorage.set( "database", this.database ) ;
         globalStorage.set( "server", this.server ) ;
-        
+    }
 }
 
 class Username {
