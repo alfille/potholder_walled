@@ -574,63 +574,42 @@ class DatabaseManager { // convenience class
 }
 globalDatabase = new DatabaseManager() ;
 
-class Cookie { //convenience class
-    // 2 versions, one with values placed in global scope, the other purely local values
+class Storage { //convenience class
+    // all values placed in global scope as well
     
     set( cname, value ) {
-        // From https://www.tabnine.com/academy/javascript/how-to-set-cookies-javascript/
-        this.local_set( cname, value ) ;
+        localStorage.setItem( cname, JSON.stringify(value) );
         globalThis[cname] = value;
     }
     
-    local_set( cname, value ) {
-        localStorage.setItem( cname, JSON.stringify(value) );
-    }
-
     del( cname ) {
-        this.local_del(cname);
-        globalThis[cname] = null;
-    }
-    
-    local_del( cname ) {
         localStorage.removeItem(cname);
+        globalThis[cname] = null;
     }
     
     get( cname ) {
         // local storage
-        const ls = this.local_get( cname ) ;
-        if ( ls ) {
-            globalThis[cname] = ls;
-            return ls ;
-        }
-
-        // doesn't exist
-        return null;
-    }
-    
-    local_get( cname ) {
-        // local storage
         const ls = localStorage.getItem(cname);
-        if ( ls ) {
-            try {
-                return JSON.parse( ls ) ;
-            }
-            catch(err) {
-                return ls ;
-            }
+        if ( ls == null ) {
+            return null ;
         }
-        return null ;
-    }
 
-    clear() {
-        this.local_clear();
+        let ls_parsed;
+        try {
+            ls_parsed = JSON.parse( ls ) ;
+        }
+        catch {
+            ls_parsed = ls ;
+        }
+        globalThis[cname] = ls_parsed;
+        return ls_parsed ;
     }
     
-    local_clear() {
+    clear() {
         localStorage.clear();
     }
 }
-globalStorage = new Cookie() ;
+globalStorage = new Storage() ;
 
 class Pagelist {
     // list of subclasses = displayed "pages"
@@ -1206,14 +1185,23 @@ class Page { // singleton class
 globalPage = new Page();
 
 class Address {
-    constructor() {
+    test_and_store() {
+        // get and parse url
         this.url = new URL(window.location.href);
         [this.database, this.server] = this.split_url(this.url);
 
         this.database_url = new URL( window.location.href ) ;
         this.database_url.pathname = "/couchdb" ;        
+
+        // get stored url
+        const d = globalStorage.get( "database" );
+        const s = globalStorage.get( "server"   );
         
-        this.store_url() ;
+        // store new url
+        this.store_url();
+        
+        // return True if same url
+        return ( d == this.database && s == this.server ) ;
     }
     
     split_url( url ) {
@@ -1230,6 +1218,7 @@ class Address {
         globalStorage.set( "server", this.server ) ;
     }
 }
+globalAddress = new Address() ;
 
 class Username {
     fresh() {
@@ -1285,7 +1274,8 @@ window.onload = () => {
         fullscreen: "big_picture",
         }, globalStorage.get("settings") ) ;
     
-    // set Credentials from Storage / URL
+    // set database from URL
+    const new_address = globalAddress.test_and_store() ;
     globalDatabase.acquire_and_listen() ; // look for database
 
     if ( new URL(location.href).searchParams.size > 0 ) {
