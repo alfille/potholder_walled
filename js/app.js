@@ -1259,6 +1259,7 @@ class Username {
                 throw error ;
             }
         });
+    }
 }
 
 // Application starting point
