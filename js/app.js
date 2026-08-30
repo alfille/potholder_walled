@@ -1256,8 +1256,8 @@ class Username {
                 .then(() => fetchWithRetry(url, retries - 1, delay * 2));
             } else {
                 throw error ;
-        });
-    }
+            }
+        };
 }
 
 // Usage inside your profile loader
