@@ -1249,7 +1249,8 @@ class Username {
     };
     
     fetchWithRetry(url, retries = 3, delay = 1000) {
-        return fetch(url).catch((error) => {
+        return fetch(url)
+        .catch((error) => {
             if (retries > 0) {
                 console.warn(`Network error getting username. Retrying in ${delay}ms... (${retries} attempts left)`);
                 return new Promise((resolve) => setTimeout(resolve, delay))
@@ -1257,7 +1258,7 @@ class Username {
             } else {
                 throw error ;
             }
-        };
+        });
 }
 
 // Usage inside your profile loader
