@@ -1265,6 +1265,7 @@ class Username {
 // Application starting point
 window.onload = () => {
     const n = new Username() ; // test username
+    console.log("Username",n.get_name() ) ;
 
     // Stuff into history to block browser BACK button
     window.history.pushState({}, '');
