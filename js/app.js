@@ -1244,7 +1244,8 @@ class Username {
         .catch((err) => ({
             username: "Unknown",
             name: "Unknown",
-            }) ;
+            })
+        );
     };
     
     fetchWithRetry(url, retries = 3, delay = 1000) {
