@@ -1166,7 +1166,15 @@ class Address {
         // get and parse url
         this.url = new URL(window.location.href);
         [this.database, this.server] = this.split_url(this.url);
-
+        
+        // create auth url
+        this.auth_url = new URL( this.url.href ) ;
+        this.auth_url.host = [ "auth", this.server ].join('.');
+        const p = new URLSearchParams() ;
+        p.append("rd",this.url.href);
+        this.auth_url.search = p.toString() ;
+        
+        // create database url
         this.database_url = new URL( this.url.href ) ;
         this.database_url.pathname = "/couchdb" ;        
 
