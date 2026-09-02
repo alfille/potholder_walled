@@ -439,23 +439,23 @@ class DatabaseManager { // convenience class
     }
 
     checkAuth() {
-		return fetch('/auth-status', {
-			method: 'GET',
-			credentials: 'include',
-			redirect: 'manual',
-		})
-		.then( result => {
-			if ( result.status === 200 || result.status === 204 ) {
-				return {status: 'authenticated'};
-			} else {
-				window.location.href = globalAddress.get_auth() ;
-				return {status: 'unauthenticated'} ;
-			}
-		})
-		.catch ( err => {
-			return {status: 'unknown', error: err };
-		});
-	}
+        return fetch('/auth-status', {
+            method: 'GET',
+            credentials: 'include',
+            redirect: 'manual',
+        })
+        .then( result => {
+            if ( result.status === 200 || result.status === 204 ) {
+                return {status: 'authenticated'};
+            } else {
+                window.location.href = globalAddress.get_auth() ;
+                return {status: 'unauthenticated'} ;
+            }
+        })
+        .catch ( err => {
+            return {status: 'unknown', error: err };
+        });
+    }
     
     
     present() {
@@ -1223,12 +1223,12 @@ class Address {
     }
     
     get_database() {
-		return this.database_url ;
-	}
-	
-	get_auth() {
-		return this.auth_url ;
-	}
+        return this.database_url ;
+    }
+    
+    get_auth() {
+        return this.auth_url ;
+    }
 }
 globalAddress = new Address() ;
 
