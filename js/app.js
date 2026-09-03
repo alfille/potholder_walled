@@ -456,7 +456,7 @@ class DatabaseManager { // convenience class
             if ( result.status === 200 || result.status === 204 ) {
                 if ( this.username === null ) {
                     fetch("/api/me/").
-                    .then( api_res) => api_res.json())
+                    .then( api_res => api_res.json())
                     .then( user => {
                         this.username = user; 
                         })
