@@ -398,11 +398,11 @@ globalLog = new Log() ;
 class DatabaseManager { // convenience class
     // Access to remote (cloud) version of database
     constructor() {
-        // remote_connection status
-        this.status = "start" ;
         this.AUTH_STATUS_TIMEOUT_MS = 20000 ; //20 seconds
-        // remoteCouch contents
+        
+        // login_name
         this.username = null ;
+
         this.database = null ;
         this.address  = null ;
         this.local    = null ;
@@ -454,6 +454,13 @@ class DatabaseManager { // convenience class
             })
         .then( result => {
             if ( result.status === 200 || result.status === 204 ) {
+                if ( this.username === null ) {
+                    fetch("/api/me/").
+                    .then( api_res) => api_res.json())
+                    .then( user => {
+                        this.username = user; 
+                        })
+                }
                 return {status:'authenticated'};
             } else {
                 window.location.href = globalAddress.get_auth() ;
@@ -1263,42 +1270,8 @@ class Address {
 }
 globalAddress = new Address() ;
 
-class Username {
-    fresh() {
-        this.name = "Unknown" ;
-        globalStorage.set("username",name) ;
-    }
-
-    get_name() {
-        return this.fetchWithRetry('/api/me', 3, 1000)
-        .then((response) => response.json())
-        .then((user) => console.log('Loaded user:', user))
-        .catch((err) => ({
-            username: "Unknown",
-            name: "Unknown",
-            })
-        );
-    };
-    
-    fetchWithRetry(url, retries = 3, delay = 1000) {
-        return fetch(url)
-        .catch((error) => {
-            if (retries > 0) {
-                console.warn(`Network error getting username. Retrying in ${delay}ms... (${retries} attempts left)`);
-                return new Promise((resolve) => setTimeout(resolve, delay))
-                .then(() => fetchWithRetry(url, retries - 1, delay * 2));
-            } else {
-                throw error ;
-            }
-        });
-    }
-}
-
 // Application starting point
 window.onload = () => {
-    const n = new Username() ; // test username
-    console.log("Username",n.get_name() ) ;
-
     // Stuff into history to block browser BACK button
     window.history.pushState({}, '');
     window.addEventListener('popstate', ()=>window.history.replaceState({}, '') );
