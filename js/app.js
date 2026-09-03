@@ -398,6 +398,9 @@ globalLog = new Log() ;
 class DatabaseManager { // convenience class
     // Access to remote (cloud) version of database
     constructor() {
+        // remote_connection status
+        this.status = "start" ;
+        this.AUTH_STATUS_TIMEOUT_MS = 20000 ; //20 seconds
         // remoteCouch contents
         this.username = null ;
         this.database = null ;
@@ -438,23 +441,39 @@ class DatabaseManager { // convenience class
         }
     }
 
+    // reset authelia authorization
     checkAuth() {
+        if ( !navigator.online() ) {
+            return Promise.resolve({status: 'offline'}) ;
+        }  
         return fetch('/auth-status', {
             method: 'GET',
             credentials: 'include',
             redirect: 'manual',
-        })
+            signal: AbortSignal.timeout(this.AUTH_STATUS_TIMEOUT_MS),
+            })
         .then( result => {
             if ( result.status === 200 || result.status === 204 ) {
-                return {status: 'authenticated'};
+                return {status:'authenticated'};
             } else {
                 window.location.href = globalAddress.get_auth() ;
                 return {status: 'unauthenticated'} ;
             }
-        })
-        .catch ( err => {
-            return {status: 'unknown', error: err };
-        });
+            })
+        .catch( err => {
+            if (err.name === 'TimeoutError') {
+                // request hung past the timeout — server/host unreachable,
+                // slow/broken network, or a routing black hole
+                return { status: 'unreachable', error: err };
+            }
+            if (err.name === 'AbortError') {
+                // aborted for a different reason (rare here, since we control the signal)
+                return { status: 'unknown', error: err };
+            }
+            // TypeError — could be DNS failure, connection refused, no network,
+            // or a blocked cross-origin redirect. Browsers do not expose which.
+            return { status: 'network-error', error: err };
+            });    
     }
     
     
@@ -474,10 +493,22 @@ class DatabaseManager { // convenience class
             this.status("good","Local database only (no replication)");
             return ;
         }
-            
-        this.remoteDB = new PouchDB( globalAddress.database_url.href , {
+        this.remoteDB = new PouchDB( globalAddress.database_url.href, {
             "skip_setup": "true",
-            });
+            fetch: (url, opts) => {
+                opts.credentials = 'include';
+                return PouchDB.fetch(url, opts).then( fetch_res => {
+                    if (fetch_res.status === 401) {
+                        this.checkAuth().then( auth_res => {
+                            if (auth_res.status === 'unauthenticated') {
+                                goToLogin();
+                            }
+                        });
+                    }
+                    return fetch_res; // still return it — let PouchDB's own error handling proceed too
+                });
+            }
+        });            
         if ( this.remoteDB ) {
             this.status( "good","download remote database");
             this.db.replicate.from( this.remoteDB )
@@ -1195,7 +1226,7 @@ class Address {
         
         // create database url
         this.database_url = new URL( this.url.href ) ;
-        this.database_url.pathname = "/couchdb" ;        
+        this.database_url.pathname = "/couchdb/" ;        
 
         // get stored url
         const d = globalStorage.get( "database" );
