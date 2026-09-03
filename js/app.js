@@ -445,7 +445,8 @@ class DatabaseManager { // convenience class
     checkAuth() {
         if ( !navigator.online() ) {
             return Promise.resolve({status: 'offline'}) ;
-        }  
+        }
+        console.log("/auth-status");  
         return fetch('/auth-status', {
             method: 'GET',
             credentials: 'include',
@@ -455,6 +456,7 @@ class DatabaseManager { // convenience class
         .then( result => {
             if ( result.status === 200 || result.status === 204 ) {
                 if ( this.username === null ) {
+                    console.log("/api/me");
                     fetch("/api/me")
                     .then( api_res => api_res.json())
                     .then( user => {
@@ -500,6 +502,7 @@ class DatabaseManager { // convenience class
             this.status("good","Local database only (no replication)");
             return ;
         }
+        console.log("remote setup");
         this.remoteDB = new PouchDB( globalAddress.database_url.href, {
             "skip_setup": "true",
             fetch: (url, opts) => {
