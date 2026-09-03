@@ -527,7 +527,7 @@ class DatabaseManager { // convenience class
 				"skip_setup": "true",
 				fetch: (url, opts) => {
 					opts.credentials = 'include';
-					opts.redirect = 'manual',
+					opts.redirect = 'manual';
 					return PouchDB.fetch(url, opts).then( fetch_res => {
 						if (fetch_res.status === 401) {
 							this.checkAuth().then( auth_res => {
