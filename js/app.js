@@ -443,7 +443,7 @@ class DatabaseManager { // convenience class
 
     // reset authelia authorization
     checkAuth() {
-        if ( !navigator.online() ) {
+        if ( !navigator.online ) {
             return Promise.resolve({status: 'offline'}) ;
         }
         console.log("/auth-status");  
@@ -456,11 +456,16 @@ class DatabaseManager { // convenience class
         .then( result => {
             if ( result.status === 200 || result.status === 204 ) {
                 if ( this.username === null ) {
-                    console.log("/api/me");
+                    console.log("/api/me", {credentials: 'include'});
                     fetch("/api/me")
-                    .then( api_res => api_res.json())
+                    .then( api_res => {
+						if ( !api_res.ok ) {
+							throw new Error( "Name failed "+api_res.status ) ;
+						}
+						return api_res.json() ;
+						})
                     .then( user => {
-                        this.username = user; 
+                        this.username = user.name ; 
                         })
                 }
                 return {status:'authenticated'};
