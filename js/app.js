@@ -470,7 +470,7 @@ class DatabaseManager { // convenience class
                 }
                 return {status:'authenticated'};
             } else {
-                window.location.href = globalAddress.get_auth() ;
+                //window.location.href = globalAddress.get_auth() ;
                 return {status: 'unauthenticated'} ;
             }
             })
@@ -498,6 +498,10 @@ class DatabaseManager { // convenience class
     not_present() {
         this.status( "disconnect", "--network offline--" ) ;
     }
+    
+    reset_page() {
+		window.location.href = globalAddress.get_auth() ;
+	}
 
     // Initialise a sync process with the remote server
     foreverSync() {
@@ -507,31 +511,44 @@ class DatabaseManager { // convenience class
             this.status("good","Local database only (no replication)");
             return ;
         }
-        console.log("remote setup");
-        this.remoteDB = new PouchDB( globalAddress.database_url.href, {
-            "skip_setup": "true",
-            fetch: (url, opts) => {
-                opts.credentials = 'include';
-                return PouchDB.fetch(url, opts).then( fetch_res => {
-                    if (fetch_res.status === 401) {
-                        this.checkAuth().then( auth_res => {
-                            if (auth_res.status === 'unauthenticated') {
-                                goToLogin();
-                            }
-                        });
-                    }
-                    return fetch_res; // still return it — let PouchDB's own error handling proceed too
-                });
-            }
-        });            
-        if ( this.remoteDB ) {
-            this.status( "good","download remote database");
-            this.db.replicate.from( this.remoteDB )
-                .catch( (err) => this.status("problem",`Replication from remote error ${err.message}`) )
-                .finally( _ => this.syncer() );
-        } else {
-            this.status("problem","No remote database specified!");
-        }
+		this.checkAuth().then( auth_res => {
+			if (auth_res.status === 'unauthenticated') {
+				this.reset_page();
+				return;
+			}
+			if (auth_res.status !== 'authenticated') {
+				// offline/unreachable/network-error — don't attempt sync this cycle
+				this.status("problem", `Not syncing: ${auth_res.status}`);
+				return;
+			}
+			
+			console.log("remote setup");
+			this.remoteDB = new PouchDB( globalAddress.database_url.href, {
+				"skip_setup": "true",
+				fetch: (url, opts) => {
+					opts.credentials = 'include';
+					opts.redirect = 'manual',
+					return PouchDB.fetch(url, opts).then( fetch_res => {
+						if (fetch_res.status === 401) {
+							this.checkAuth().then( auth_res => {
+								if (auth_res.status === 'unauthenticated') {
+									this.reset_page();
+								}
+							});
+						}
+						return fetch_res; // still return it — let PouchDB's own error handling proceed too
+					});
+				}
+			});            
+			if ( this.remoteDB ) {
+				this.status( "good","download remote database");
+				this.db.replicate.from( this.remoteDB )
+					.catch( (err) => this.status("problem",`Replication from remote error ${err.message}`) )
+					.finally( _ => this.syncer() );
+			} else {
+				this.status("problem","No remote database specified!");
+			}
+		}) ;
     }
     
     syncer() {
