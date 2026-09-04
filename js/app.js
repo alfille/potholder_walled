@@ -731,17 +731,6 @@ new class DatabaseInfo extends Pagelist {
 
 }() ;
 
-new class RemoteDatabaseInput extends Pagelist {
-    show_content() {
-        new TextBox("Your Credentials") ;
-        const doc = {} ;
-        ["username","database","address","local"].forEach( x => doc[x] = globalDatabase[x] ) ;
-        doc.default_address=`${window.location.protocol}//${window.location.host}/couchdb`;
-        doc.default_database=window.location.hostname.split(".")[0] ;
-        globalPotData = new DatabaseData( doc, structRemoteUser );
-    }
-}() ;
-
 new class Settings extends Pagelist {
     show_content() {
         new TextBox("Display Settings") ;
@@ -1155,13 +1144,6 @@ class Page { // singleton class
         // detail is for extra data to pass on
         if ( globalSettings?.console == "true" ) {
             console.log("SHOW",page,"STATE",this.path);
-        }
-        // test that database is selected
-        if ( globalDatabase.db == null || globalDatabase.database == null ) {
-            // can't bypass this! test if database exists
-            if ( page != "FirstTime" && page != "RemoteDatabaseInput" ) {
-                this.show("RemoteDatabaseInput");
-            }
         }
 
         this.add(page) ; // place in reversal list

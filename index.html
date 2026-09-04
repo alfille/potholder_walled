@@ -143,15 +143,7 @@
                             <button type="button" class="divbutton Search" onclick="globalPage.show( 'SearchList' )" title="Full text search">Find &#x1F50E;&#xFE0E;</button>
                             <button type="button" class="divbutton" onclick="globalPage.helpLink()">Help</button>
                         </div>
-                        <!-- top: RemoteDatabaseInput -->
-                        <div class="RemoteDatabaseInput topButtons pageOverlay">
-                            <button type="button" class="divbutton edit_data" onclick="globalPotData.edit_doc()" title="Start editing these entries">Edit</button>
-                            <button type="button" class="divbutton return" onclick="globalPage.show( 'back' )">Cancel</button>
-                            <button type="button" class="divbutton" onclick="globalPage.show( 'MakeURL' )">Web Link</button>
-                            <button type="button" class="divbutton" onclick="globalPage.show( 'MakeViewerURL' )">Viewer Link</button>
-                            <button type="button" class="divbutton" onclick="globalPage.helpLink()">Help</button>
-                        </div>
-                    </div>
+                     </div>
                 </div>
                 </nav>
                 <aside>
@@ -175,7 +167,6 @@
                                     <button type="button" class="divbutton MainBold" onclick="globalPage.show( 'Help' )">Instructions</button>
                                 </div>
                                 <div class="PotProcButtons">
-                                    <button type="button" class="divbutton MainItalic" onclick="globalPage.show( 'RemoteDatabaseInput' )">Name/Password</button>
                                     <button type="button" class="divbutton delete MainItalic" onclick="globalPage.show( 'Advanced' )">Advanced Options</button>
                                 </div>
                             </div>
@@ -213,7 +204,6 @@
                                 It looks like this is your first time using the software on this device. Please choose an option:
                             </p>
                             <button type="button" class="divbutton MainBold" onclick="globalPage.show( 'Help' )">PotHolder Instructions</button>
-                            <button type="button" class="divbutton MainBold" onclick="globalPage.show( 'RemoteDatabaseInput' )">Setup</button>
                         </div>
                     </div>
                     <!-- body: MakeURL MakeViewerURL  -->
@@ -261,8 +251,8 @@
                             <table id="SearchList"></table>
                         </div>
                     </div>
-                    <!-- body: PotNew PotEdit PotPix PotPixEdit DatabaseInfo RemoteDatabaseInput Settings -->
-                    <div class="PotData PotNew PotEdit PotPix PotPixEdit PotPixLoading DatabaseInfo RemoteDatabaseInput Settings pageOverlay">
+                    <!-- body: PotNew PotEdit PotPix PotPixEdit DatabaseInfo Settings -->
+                    <div class="PotData PotNew PotEdit PotPix PotPixEdit PotPixLoading DatabaseInfo Settings pageOverlay">
                         <span class="ContentTitle ContentTitleHidden">Loading...</span>
                         <div id="PotDataContent" ></div>
                     </div>
