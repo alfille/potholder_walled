@@ -511,10 +511,12 @@ class DatabaseManager { // convenience class
         //document.getElementById( "userstatus" ).value = this.username;
 
         if ( this.local=="true" ) { // local -- no sync
+			console.log("local");
             this.status("good","Local database only (no replication)");
             return ;
         }
 		this.checkAuth().then( auth_res => {
+			console.log("auth",auth_res);
 			if (auth_res.status === 'unauthenticated') {
 				this.reset_page();
 				return;
