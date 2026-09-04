@@ -438,7 +438,7 @@ class DatabaseManager { // convenience class
     open() { // local
         if ( globalThis.database && (globalThis.database !== "") ) {
             this.db = new PouchDB( globalThis.database, {auto_compaction: true} ); // open local copy
-            console.log("opened ",globalThhe.database);
+            console.log("opened ",globalThis.database);
         }
     }
 
