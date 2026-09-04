@@ -444,7 +444,7 @@ class DatabaseManager { // convenience class
 
     // reset authelia authorization
     checkAuth() {
-        if ( !navigator.online ) {
+        if ( !navigator.onLine ) {
 			console.log("navigator.onLine",navigator.onLine);
             return Promise.resolve({status: 'offline'}) ;
         }
