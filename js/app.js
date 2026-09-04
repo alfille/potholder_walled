@@ -460,6 +460,7 @@ class DatabaseManager { // convenience class
                     console.log("/api/me", {credentials: 'include'});
                     fetch("/api/me")
                     .then( api_res => {
+						console.log("api/me",api_res);
 						if ( !api_res.ok ) {
 							throw new Error( "Name failed "+api_res.status ) ;
 						}
@@ -476,6 +477,7 @@ class DatabaseManager { // convenience class
             }
             })
         .catch( err => {
+			console.log("auth failure",err);
             if (err.name === 'TimeoutError') {
                 // request hung past the timeout — server/host unreachable,
                 // slow/broken network, or a routing black hole
