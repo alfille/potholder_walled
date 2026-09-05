@@ -458,8 +458,8 @@ class DatabaseManager { // convenience class
         .then( result => {
             if ( result.status === 200 || result.status === 204 ) {
                 if ( this.username === null ) {
-                    console.log("/api/me", {credentials: 'include'});
-                    fetch("/api/me")
+                    console.log("/api/me");
+                    fetch("/api/me", {credentials: 'include'})
                     .then( api_res => {
 						console.log("api/me",api_res);
 						if ( !api_res.ok ) {
@@ -512,7 +512,7 @@ class DatabaseManager { // convenience class
     foreverSync() {
         //document.getElementById( "userstatus" ).value = this.username;
 
-        if ( this.local=="true" ) { // local -- no sync
+        if ( this.local==true ) { // local -- no sync
 			console.log("local");
             this.status("good","Local database only (no replication)");
             return ;
