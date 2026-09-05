@@ -504,8 +504,8 @@ class DatabaseManager { // convenience class
     }
     
     reset_page() {
-		console.log("RESET PAGE -- won't for testing");
-		//window.location.href = globalAddress.get_auth() ;
+		console.log("RESET PAGE -- won't for testing: ",globalAddress.get_auth().href);
+		window.location.href = globalAddress.get_auth().href ;
 	}
 
     // Initialise a sync process with the remote server
