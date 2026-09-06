@@ -1288,6 +1288,7 @@ globalAddress = new Address() ;
 // Application starting point
 window.onload = () => {
     // Stuff into history to block browser BACK button
+    console.log("startup");
     window.history.pushState({}, '');
     window.addEventListener('popstate', ()=>window.history.replaceState({}, '') );
 
@@ -1306,6 +1307,7 @@ window.onload = () => {
         }, globalStorage.get("settings") ) ;
     
     // set database from URL
+    console.log("Address");
     const new_address = globalAddress.test_and_store() ;
     globalDatabase.acquire_and_listen() ; // look for database
 
