@@ -504,7 +504,8 @@ class DatabaseManager { // convenience class
     }
     
     reset_page() {
-		console.log("RESET PAGE -- won't for testing: ",globalAddress.get_auth().href);
+		//console.log("RESET PAGE -- won't for testing: ",globalAddress.get_auth().href);
+		// trigger a call to authelia sig-in and then restart this app -- will need to save some state
 		window.location.href = globalAddress.get_auth().href ;
 	}
 
@@ -944,15 +945,6 @@ new class ErrorLog extends Pagelist {
         globalThumbs.show() ;
     }
 }() ;
-new class FirstTime extends Pagelist {
-    show_content() {
-        globalPot.unselect() ;
-        new TextBox("Welcome") ;
-        if ( globalDatabase.db !== null ) {
-            globalPage.show("MainMenu");
-        }
-    }
-}() ;
 
 new class InvalidPiece extends Pagelist {
     show_content() {
@@ -1234,7 +1226,7 @@ globalPage = new Page();
 
 class Address {
     test_and_store() {
-        // get and parse url
+        // get and parse url -- essentially initilisation of this class
         this.url = new URL(window.location.href);
         [this.database, this.server] = this.split_url(this.url);
         
@@ -1242,7 +1234,7 @@ class Address {
         this.auth_url = new URL( this.url.href ) ;
         this.auth_url.host = [ "auth", this.server ].join('.');
         const p = new URLSearchParams() ;
-        p.append("rd",this.url.href);
+        p.append("rd",this.url.href); // redirect back to this app
         this.auth_url.search = p.toString() ;
         
         // create database url
@@ -1275,12 +1267,21 @@ class Address {
     }
     
     get_database() {
+		// get database ( has /couchdb/ path )
         return this.database_url ;
     }
     
     get_auth() {
+		// get authelia authorization (signin) page with redirect
         return this.auth_url ;
     }
+    
+    get_main() {
+		// page for bad initial URL (i.e. not a database)
+		server = new URL( this.url.href ) ;
+		server.host = this.server ;
+		return server ;
+	}
 }
 globalAddress = new Address() ;
 
@@ -1367,8 +1368,8 @@ window.onload = () => {
         .finally( _ => globalPage.show("MainMenu") ) ;
         
     } else {
-        globalPage.reset();
-        globalPage.show("FirstTime");
+		// bad database usl
+		window.location.href = globalAddress.get_main().href ;
     }
 };
 
