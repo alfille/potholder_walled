@@ -1228,17 +1228,20 @@ class Address {
     test_and_store() {
         // get and parse url -- essentially initilisation of this class
         this.url = new URL(window.location.href);
-        [this.database, this.server] = this.split_url(this.url);
+        this.bare_url = new URL( this.url) ;
+        this.base_url.pathname = "/" ;
+        this.base_url.search = "" ;
+        [this.database, this.server] = this.split_url(this.bare_url);
         
         // create auth url
-        this.auth_url = new URL( this.url.href ) ;
+        this.auth_url = new URL( this.bare_url ) ;
         this.auth_url.host = [ "auth", this.server ].join('.');
         const p = new URLSearchParams() ;
         p.append("rd",this.url.href); // redirect back to this app
         this.auth_url.search = p.toString() ;
         
         // create database url
-        this.database_url = new URL( this.url.href ) ;
+        this.database_url = new URL( this.bare_url ) ;
         this.database_url.pathname = "/couchdb/" ;        
 
         // get stored url
@@ -1278,9 +1281,16 @@ class Address {
     
     get_main() {
 		// page for bad initial URL (i.e. not a database)
-		server = new URL( this.url.href ) ;
+		server = new URL( this.bare_url ) ;
 		server.host = this.server ;
 		return server ;
+	}
+	
+	get fauxton() {
+		// link to Fauxton database administrative console
+		faux = new URL( this.bare_url ) ;
+		faux.host = ["couchdb", this.server].join(".");
+		return faux ;
 	}
 }
 globalAddress = new Address() ;
