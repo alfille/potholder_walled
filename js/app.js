@@ -1229,9 +1229,9 @@ class Address {
         // get and parse url -- essentially initilisation of this class
         this.url = new URL(window.location.href);
         this.bare_url = new URL( this.url) ;
-        this.base_url.pathname = "/" ;
-        this.base_url.search = "" ;
-        [this.database, this.server] = this.split_url(this.bare_url);
+        this.bare_url.pathname = "/" ;
+        this.bare_url.search = "" ;
+        [this.database, this.server] = this._split_url(this.bare_url);
         
         // create auth url
         this.auth_url = new URL( this.bare_url ) ;
@@ -1249,22 +1249,18 @@ class Address {
         const s = globalStorage.get( "server"   );
         
         // store new url
-        this.store_url();
+        this._store_url();
         
         // return True if same url
         return ( d == this.database && s == this.server ) ;
     }
     
-    split_url( url ) {
+    _split_url( url ) {
         const [d, ...s] = url.host.split('.');
         return [ d, s.join('.') ];
     }
     
-    database() {
-        return this.database ;
-    }
-    
-    store_url() {
+    _store_url() {
         globalStorage.set( "database", this.database ) ;
         globalStorage.set( "server", this.server ) ;
     }
