@@ -110,12 +110,6 @@
                         <div class="topButtons PotPixLoading pageOverlay">
                             <button type="button" class="divbutton" onclick="globalPage.helpLink()">Help</button>
                         </div>
-                        <!-- top: InvalidPiece -->
-                        <div class="InvalidPiece topButtons pageOverlay">
-                            <button type="button" class="divbutton return" onclick="globalPage.show( 'AllPieces' )">Return</button>
-                            <button type="button" class="divbutton Search" onclick="globalPage.show( 'SearchList' )" title="Full text search">Find &#x1F50E;&#xFE0E;</button>
-                            <button type="button" class="divbutton" onclick="globalPage.helpLink()">Help</button>
-                        </div>
                         <!-- top: ErrorLog -->
                         <div class="ErrorLog topButtons pageOverlay">
                             <button type="button" class="divbutton NewCamera" title="Use camera -- new piece or assign later" onClick="globalPot.pushPixButton()">New Photo &#128247;</button>            
@@ -258,14 +252,6 @@
                             </div>
                         </div>
                         <hr>
-                    </div>
-                    <!-- body: InvalidPiece -->
-                    <div class="InvalidPiece pageOverlay">
-                        <div id="InvalidPotContent" >
-                            <h2>Not a valid piece ID</H2>
-                            <p>Possible causes include your data not yet synced, or changes since this piece was selected</p>
-                            <button type="button" class="divbutton" onclick="globalPage.show('AllPieces')">Ok</button>
-                        </div>
                     </div>
                     <!-- body: ErrorLog -->
                     <div class="ErrorLog pageOverlay">

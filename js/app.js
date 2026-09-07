@@ -892,15 +892,6 @@ new class ErrorLog extends Pagelist {
     }
 }() ;
 
-new class InvalidPiece extends Pagelist {
-    show_content() {
-        globalPage.forget() ; // don't return here
-        globalPot.unselect();
-        new StatBox() ;
-        globalThumbs.show() ;
-    }
-}() ;
-
 new class MainMenu extends Pagelist {
     show_content() {
         globalPot.unselect();
