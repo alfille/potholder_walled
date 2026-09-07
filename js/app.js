@@ -752,25 +752,6 @@ new class MakeURL extends Pagelist {
     }
 }() ;
 
-new class MakeViewerURL extends Pagelist {
-    show_content() {
-        new StatBox() ;
-        document.getElementById("URLtitle").innerText = "Viewer Link" ;
-        let url = new URL( "/viewer/index.html", window.location.href ) ;
-        if ( url.hostname == "localhost" ) {
-            url = new URL( "/viewer/index.html", globalDatabase.address ) ;
-            url.port = '';
-        }
-        ["username","database","local"].forEach( x => url.searchParams.append( x, globalDatabase[x] ) );
-        new QRious( {
-            value: url.toString(),
-            element: document.getElementById("qr"),
-            size: 300,
-        });
-        document.getElementById("MakeURLtext").href = url.toString() ;
-    }
-}() ;
-
 new class PotPrint extends Pagelist {
     show_content() {
         if ( globalPot.isSelected() ) {
@@ -1268,7 +1249,7 @@ class Address {
         return server ;
     }
     
-    get fauxton() {
+    get_fauxton() {
         // link to Fauxton database administrative console
         faux = new URL( this.bare_url ) ;
         faux.host = ["couchdb", this.server].join(".");
