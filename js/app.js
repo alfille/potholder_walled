@@ -177,13 +177,6 @@ globalThis.structRemoteUser = [
         type:  "text",
     },
     {
-        name:  "address",
-        alias: "Remote database server address",
-        hint:  "alfille.online -- don't include database name",
-        type:  "text",
-        default: "",
-    },
-    {
         name:  "database",
         hint:  'Name of ceramic database (e.g. "potholder"',
         type:  "text",
@@ -404,7 +397,6 @@ class DatabaseManager { // convenience class
         this.username = null ;
 
         this.database = null ;
-        this.address  = null ;
         this.local    = null ;
         
         this.remoteDB = null;
@@ -415,11 +407,11 @@ class DatabaseManager { // convenience class
     }
     
     load() {
-        ["username","database","address","local"].forEach( x => this[x]=globalStorage.local_get(x) );
+        ["username","database","local"].forEach( x => this[x]=globalStorage.local_get(x) );
     }
     
     store() {
-        ["username","database","address","local"].forEach( x => globalStorage.local_set(x,this[x]) );
+        ["username","database","local"].forEach( x => globalStorage.local_set(x,this[x]) );
     }
     
     acquire_and_listen() {    
@@ -445,7 +437,7 @@ class DatabaseManager { // convenience class
     // reset authelia authorization
     checkAuth() {
         if ( !navigator.onLine ) {
-			console.log("navigator.onLine",navigator.onLine);
+            console.log("navigator.onLine",navigator.onLine);
             return Promise.resolve({status: 'offline'}) ;
         }
         console.log("/auth-status");  
@@ -461,12 +453,12 @@ class DatabaseManager { // convenience class
                     console.log("/api/me");
                     fetch("/api/me", {credentials: 'include'})
                     .then( api_res => {
-						console.log("api/me",api_res);
-						if ( !api_res.ok ) {
-							throw new Error( "Name failed "+api_res.status ) ;
-						}
-						return api_res.json() ;
-						})
+                        console.log("api/me",api_res);
+                        if ( !api_res.ok ) {
+                            throw new Error( "Name failed "+api_res.status ) ;
+                        }
+                        return api_res.json() ;
+                        })
                     .then( user => {
                         this.username = user.name ; 
                         })
@@ -478,7 +470,7 @@ class DatabaseManager { // convenience class
             }
             })
         .catch( err => {
-			console.log("auth failure",err);
+            console.log("auth failure",err);
             if (err.name === 'TimeoutError') {
                 // request hung past the timeout — server/host unreachable,
                 // slow/broken network, or a routing black hole
@@ -504,59 +496,59 @@ class DatabaseManager { // convenience class
     }
     
     reset_page() {
-		//console.log("RESET PAGE -- won't for testing: ",globalAddress.get_auth().href);
-		// trigger a call to authelia sig-in and then restart this app -- will need to save some state
-		window.location.href = globalAddress.get_auth().href ;
-	}
+        //console.log("RESET PAGE -- won't for testing: ",globalAddress.get_auth().href);
+        // trigger a call to authelia sig-in and then restart this app -- will need to save some state
+        window.location.href = globalAddress.get_auth().href ;
+    }
 
     // Initialise a sync process with the remote server
     foreverSync() {
         //document.getElementById( "userstatus" ).value = this.username;
 
         if ( this.local==true ) { // local -- no sync
-			console.log("local");
+            console.log("local");
             this.status("good","Local database only (no replication)");
             return ;
         }
-		this.checkAuth().then( auth_res => {
-			console.log("auth",auth_res);
-			if (auth_res.status === 'unauthenticated') {
-				this.reset_page();
-				return;
-			}
-			if (auth_res.status !== 'authenticated') {
-				// offline/unreachable/network-error — don't attempt sync this cycle
-				this.status("problem", `Not syncing: ${auth_res.status}`);
-				return;
-			}
-			
-			console.log("remote setup");
-			this.remoteDB = new PouchDB( globalAddress.database_url.href, {
-				"skip_setup": "true",
-				fetch: (url, opts) => {
-					opts.credentials = 'include';
-					opts.redirect = 'manual';
-					return PouchDB.fetch(url, opts).then( fetch_res => {
-						if (fetch_res.status === 401) {
-							this.checkAuth().then( auth_res => {
-								if (auth_res.status === 'unauthenticated') {
-									this.reset_page();
-								}
-							});
-						}
-						return fetch_res; // still return it — let PouchDB's own error handling proceed too
-					});
-				}
-			});            
-			if ( this.remoteDB ) {
-				this.status( "good","download remote database");
-				this.db.replicate.from( this.remoteDB )
-					.catch( (err) => this.status("problem",`Replication from remote error ${err.message}`) )
-					.finally( _ => this.syncer() );
-			} else {
-				this.status("problem","No remote database specified!");
-			}
-		}) ;
+        this.checkAuth().then( auth_res => {
+            console.log("auth",auth_res);
+            if (auth_res.status === 'unauthenticated') {
+                this.reset_page();
+                return;
+            }
+            if (auth_res.status !== 'authenticated') {
+                // offline/unreachable/network-error — don't attempt sync this cycle
+                this.status("problem", `Not syncing: ${auth_res.status}`);
+                return;
+            }
+            
+            console.log("remote setup");
+            this.remoteDB = new PouchDB( globalAddress.database_url.href, {
+                "skip_setup": "true",
+                fetch: (url, opts) => {
+                    opts.credentials = 'include';
+                    opts.redirect = 'manual';
+                    return PouchDB.fetch(url, opts).then( fetch_res => {
+                        if (fetch_res.status === 401) {
+                            this.checkAuth().then( auth_res => {
+                                if (auth_res.status === 'unauthenticated') {
+                                    this.reset_page();
+                                }
+                            });
+                        }
+                        return fetch_res; // still return it — let PouchDB's own error handling proceed too
+                    });
+                }
+            });            
+            if ( this.remoteDB ) {
+                this.status( "good","download remote database");
+                this.db.replicate.from( this.remoteDB )
+                    .catch( (err) => this.status("problem",`Replication from remote error ${err.message}`) )
+                    .finally( _ => this.syncer() );
+            } else {
+                this.status("problem","No remote database specified!");
+            }
+        }) ;
     }
     
     syncer() {
@@ -623,7 +615,7 @@ class DatabaseManager { // convenience class
 
     // Fauxton link
     fauxton() {
-        window.open( `${globalDatabase.address}/_utils`, '_blank' );
+        window.open( `${globalAddress.get_fauxton()}`, '_blank' );
     }
     
     clearLocal() {
@@ -751,18 +743,12 @@ new class MakeURL extends Pagelist {
     show_content() {
         new StatBox() ;
         document.getElementById("URLtitle").innerText = "Web Link" ;
-        let url = new URL( "/index.html", window.location.href ) ;
-        if ( url.hostname == "localhost" ) {
-            url = new URL( "/index.html", globalDatabase.address ) ;
-            url.port = '';
-        }
-        ["username","database","address","local"].forEach( x => url.searchParams.append( x, globalDatabase[x] ) );
         new QRious( {
-            value: url.toString(),
+            value: globalAddress.bare_url.href,
             element: document.getElementById("qr"),
             size: 300,
         });
-        document.getElementById("MakeURLtext").href = url.toString() ;
+        document.getElementById("MakeURLtext").href = globalAddress.bare_url.href ;
     }
 }() ;
 
@@ -775,7 +761,7 @@ new class MakeViewerURL extends Pagelist {
             url = new URL( "/viewer/index.html", globalDatabase.address ) ;
             url.port = '';
         }
-        ["username","database","address","local"].forEach( x => url.searchParams.append( x, globalDatabase[x] ) );
+        ["username","database","local"].forEach( x => url.searchParams.append( x, globalDatabase[x] ) );
         new QRious( {
             value: url.toString(),
             element: document.getElementById("qr"),
@@ -1266,28 +1252,28 @@ class Address {
     }
     
     get_database() {
-		// get database ( has /couchdb/ path )
+        // get database ( has /couchdb/ path )
         return this.database_url ;
     }
     
     get_auth() {
-		// get authelia authorization (signin) page with redirect
+        // get authelia authorization (signin) page with redirect
         return this.auth_url ;
     }
     
     get_main() {
-		// page for bad initial URL (i.e. not a database)
-		server = new URL( this.bare_url ) ;
-		server.host = this.server ;
-		return server ;
-	}
-	
-	get fauxton() {
-		// link to Fauxton database administrative console
-		faux = new URL( this.bare_url ) ;
-		faux.host = ["couchdb", this.server].join(".");
-		return faux ;
-	}
+        // page for bad initial URL (i.e. not a database)
+        server = new URL( this.bare_url ) ;
+        server.host = this.server ;
+        return server ;
+    }
+    
+    get fauxton() {
+        // link to Fauxton database administrative console
+        faux = new URL( this.bare_url ) ;
+        faux.host = ["couchdb", this.server].join(".");
+        return faux ;
+    }
 }
 globalAddress = new Address() ;
 
@@ -1376,8 +1362,8 @@ window.onload = () => {
         .finally( _ => globalPage.show("MainMenu") ) ;
         
     } else {
-		// bad database usl
-		window.location.href = globalAddress.get_main().href ;
+        // bad database usl
+        window.location.href = globalAddress.get_main().href ;
     }
 };
 
@@ -2310,9 +2296,9 @@ class MultiTable {
         const a2a = [] ;
         return globalPot.getAllIdDoc()
         .then( docs => docs.rows
-                        .forEach( r => (cat_func( r.doc )??['unknown'])
-                            .forEach( c => a2a.push( [c,r] ))
-                             ))
+            .forEach( r => (cat_func( r.doc )??['unknown'])
+                .forEach( c => a2a.push( [c,r] ))
+                 ))
         .then( () => this.arrays2object( a2a ) );
     }
         
@@ -2407,21 +2393,21 @@ class Search { // singleton class
 
         this.field_alias={} ;
         this.field_link={} ;
-                this.fields = [] ;
+            this.fields = [] ;
 
         this.structStructure= ({
-                        PotEdit:    structData.Data,
-                        PotPix:     structData.Images,
-                        });
+            PotEdit:    structData.Data,
+            PotPix:     structData.Images,
+            });
 
         // Extract fields fields
         Object.entries(this.structStructure).forEach( ([k,v]) =>
-                        this.structFields(v)
-                        .forEach( fn => {
-                                this.field_link[fn]=k ;
-                                this.fields.push(fn);
-                                })
-                        );
+            this.structFields(v)
+            .forEach( fn => {
+                this.field_link[fn]=k ;
+                this.fields.push(fn);
+                })
+            );
     }
 
     resetTable () {
@@ -2439,23 +2425,23 @@ class Search { // singleton class
             return this.resetTable();
         }
         globalDatabase.db.search(
-                        { 
-                                query: needle,
-                                fields: this.fields,
-                                highlighting: true,
-                                mm: "80%",
-                        })
-                .then( x => x.rows.map( r =>
-                        Object.entries(r.highlighting)
-                        .map( ([k,v]) => ({
-                                        _id:r.id,
-                                        Field:this.field_alias[k],
-                                        Text:v,
-                                        Link:this.field_link[k],
-                                })
-                                )) 
-                        )
-                .then( res => res.flat() )
+            { 
+                query: needle,
+                fields: this.fields,
+                highlighting: true,
+                mm: "80%",
+            })
+        .then( x => x.rows.map( r =>
+            Object.entries(r.highlighting)
+            .map( ([k,v]) => ({
+                _id:r.id,
+                Field:this.field_alias[k],
+                Text:v,
+                Link:this.field_link[k],
+                })
+            )) 
+            )
+        .then( res => res.flat() )
         .then( res => res.map( r=>({doc:r}))) // encode as list of doc objects
         .then( res=>this.setTable(res)) // fill the table
         .catch(err=> {
@@ -2468,27 +2454,27 @@ class Search { // singleton class
         globalTable.fill(docs);
     }
 
-        structParse( struct ) {
-                return struct
-                .filter( e=>!(['date','image'].includes(e.type)))
-                .map(e=>{
-                        const name=e.name;
-                        const alias=e?.alias??name;
-                        if ( ['array','image_array'].includes(e.type) ) {
-                                return this.structParse(e.members)
-                                .map(o=>({name:[name,o.name].join("."),alias:[alias,o.alias].join(".")})) ;
-                        } else {
-                                return ({name:name,alias:alias});
-                        }
-                        })
-                .flat();
-        }
-        
-        structFields( struct ) {
-                const sP = this.structParse( struct ) ;
-                sP.forEach( o => this.field_alias[o.name]=o.alias );
-                return sP.map( o => o.name ) ;
-        }
+    structParse( struct ) {
+        return struct
+        .filter( e=>!(['date','image'].includes(e.type)))
+        .map(e=>{
+            const name=e.name;
+            const alias=e?.alias??name;
+            if ( ['array','image_array'].includes(e.type) ) {
+                    return this.structParse(e.members)
+                    .map(o=>({name:[name,o.name].join("."),alias:[alias,o.alias].join(".")})) ;
+            } else {
+                    return ({name:name,alias:alias});
+            }
+            })
+        .flat();
+    }
+    
+    structFields( struct ) {
+        const sP = this.structParse( struct ) ;
+        sP.forEach( o => this.field_alias[o.name]=o.alias );
+        return sP.map( o => o.name ) ;
+    }
 }
 
 // Set up text search
