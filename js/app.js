@@ -1244,14 +1244,14 @@ class Address {
     
     get_main() {
         // page for bad initial URL (i.e. not a database)
-        server = new URL( this.bare_url ) ;
+        const server = new URL( this.bare_url ) ;
         server.host = this.server ;
         return server ;
     }
     
     get_fauxton() {
         // link to Fauxton database administrative console
-        faux = new URL( this.bare_url ) ;
+        const faux = new URL( this.bare_url ) ;
         faux.host = ["couchdb", this.server].join(".");
         return faux ;
     }
