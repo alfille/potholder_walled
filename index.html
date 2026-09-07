@@ -68,8 +68,8 @@
                         <div class="AssignPic topButtons pageOverlay">
                             <button type="button" class="divbutton" onclick="globalPage.helpLink()">Help</button>
                         </div>
-                        <!-- top: ListMenu MakeURL StructMenu StructGeneralPot StructImages StructDatabaseInfo StructRemoteUser StructSettings -->
-                        <div class="ListMenu topButtons pageOverlay MakeURL StructMenu StructGeneralPot StructImages StructDatabaseInfo StructRemoteUser StructSettings">
+                        <!-- top: ListMenu MakeURL StructMenu StructGeneralPot StructImages StructDatabaseInfo StructSettings -->
+                        <div class="ListMenu topButtons pageOverlay MakeURL StructMenu StructGeneralPot StructImages StructDatabaseInfo StructSettings">
                             <button type="button" class="divbutton NewCamera" title="Use camera -- new piece or assign later" onClick="globalPot.pushPixButton()">New Photo &#128247;</button>            
                             <button type="button" class="divbutton NewCamera" title="Get image -- new piece or assign later" onClick="globalPot.pushGalleryButton()" >New Gallery &#128444;</button>            
                             <button type="button" class="divbutton return" onclick="globalPage.show( 'back' )">Return</button>
@@ -327,13 +327,12 @@
                             <div class="PotProcButtons">
                                 <span class="ContentTitle">Administrative</span>
                                 <button type="button" class="divbutton" onClick="globalPage.show( 'StructSettings' )" title="Display settings">Display Settings</button>
-                                <button type="button" class="divbutton" onClick="globalPage.show( 'StructRemoteUser' )" title="User credential structure">User Credentials</button>
                                 <button type="button" class="divbutton" onClick="globalPage.show( 'StructDatabaseInfo')" title="Read-only database info">Database Info</button>
                             </div>
                         </div>
                     </div>
-                    <!-- body: StructGeneralPot StructImages StructDatabaseInfo StructRemoteUser  StructSettings -->
-                    <div class="StructGeneralPot StructImages StructDatabaseInfo StructRemoteUser  StructSettings pageOverlay">
+                    <!-- body: StructGeneralPot StructImages StructDatabaseInfo StructSettings -->
+                    <div class="StructGeneralPot StructImages StructDatabaseInfo  StructSettings pageOverlay">
                         <span class="ContentTitle" id="StructShowTitle"></span>
                         <div id="StructShowContent">
                             <pre id="struct_json"></pre>
@@ -441,7 +440,6 @@
         </div>
         <!-- Splash screen -->
         <div id="splash_screen">
-            <a href="?reset=true">Reset everything (local data and credentials)</a><hr>
             <h1>PotHolder</h1>
             <img src="images/pot400.jpg" class="splashImg" alt="PotHolder &mdash; Ceramic Project Tracker" loading="lazy">
             <hr>

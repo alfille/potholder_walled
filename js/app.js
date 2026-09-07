@@ -164,26 +164,6 @@ globalThis.structData = {
     Images: structImages,
 };
         
-globalThis.structRemoteUser = [
-    {
-        name:  "local",
-        alias: "Local only",
-        hint:  "No CouchDB server to replicate with",
-        type:  "bool",
-    },
-    {
-        name:  "username",
-        hint:  "Your user name for access",
-        type:  "text",
-    },
-    {
-        name:  "database",
-        hint:  'Name of ceramic database (e.g. "potholder"',
-        type:  "text",
-        default: "",
-    },
-];
-
 globalThis.structDatabaseInfo = [
     {
         name:  "db_name",
@@ -843,7 +823,6 @@ class StructShow extends Pagelist {
 new class StructGeneralPot extends StructShow {}( structData.Data, "Data Fields") ;
 new class StructImages extends StructShow {}( structData.Images, "Image Fields") ;
 new class StructDatabaseInfo extends StructShow {}( structDatabaseInfo, "Database Metadata") ;
-new class StructRemoteUser extends StructShow {}( structRemoteUser, "User Credentials") ;
 new class StructSettings extends StructShow {}( structSettings, "Display Settings") ;
 
 class ListGroup extends Pagelist {
