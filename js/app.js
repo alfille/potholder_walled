@@ -223,7 +223,7 @@ globalThis.structSettings = [
 globalThis. potId = null ;
 
 // singleton class instances
-globalThis. globalAddress  = null ;
+//globalThis. globalAddress  = null ;
 globalThis. globalCropper  = null ;
 globalThis. globalDatabase = null ;
 globalThis. globalLog      = null ;
@@ -261,7 +261,8 @@ class CSV { // convenience class
     }
     
     download( csv ) {
-        const filename = `${globalAddress.database}.csv` ;
+//        const filename = `${globalAddress.database}.csv` ;
+        const filename = `${address.database}.csv` ;
         const htype = "text/csv" ;
         //htype the file type i.e. text/csv
         const blub = new Blob([csv], {type: htype});
@@ -433,7 +434,8 @@ class DatabaseManager { // convenience class
     reset_page() {
         //console.log("RESET PAGE -- won't for testing: ",globalAddress.get_auth().href);
         // trigger a call to authelia sig-in and then restart this app -- will need to save some state
-        window.location.href = globalAddress.get_auth().href ;
+//        window.location.href = globalAddress.get_auth().href ;
+        window.location.href = address.get_auth().href ;
     }
 
     // Initialise a sync process with the remote server
@@ -458,7 +460,8 @@ class DatabaseManager { // convenience class
             }
             
             console.log("remote setup");
-            this.remoteDB = new PouchDB( globalAddress.database_url.href, {
+//            this.remoteDB = new PouchDB( globalAddress.database_url.href, {
+            this.remoteDB = new PouchDB( address.database_url.href, {
                 "skip_setup": "true",
                 fetch: (url, opts) => {
                     opts.credentials = 'include';
@@ -550,7 +553,8 @@ class DatabaseManager { // convenience class
 
     // Fauxton link
     fauxton() {
-        window.open( `${globalAddress.get_fauxton()}`, '_blank' );
+//        window.open( `${globalAddress.get_fauxton()}`, '_blank' );
+        window.open( `${address.get_fauxton()}`, '_blank' );
     }
     
     clearLocal() {
@@ -1220,7 +1224,9 @@ class Address {
         return faux ;
     }
 }
-globalAddress = new Address() ;
+//globalAddress = new Address() ;
+export default Address;
+const address = Address() ;
 
 // Application starting point
 window.onload = () => {
