@@ -68,8 +68,8 @@
                         <div class="AssignPic topButtons pageOverlay">
                             <button type="button" class="divbutton" onclick="globalPage.helpLink()">Help</button>
                         </div>
-                        <!-- top: ListMenu MakeURL StructMenu StructGeneralPot StructImages StructDatabaseInfo StructSettings -->
-                        <div class="ListMenu topButtons pageOverlay MakeURL StructMenu StructGeneralPot StructImages StructDatabaseInfo StructSettings">
+                        <!-- top: ListMenu MakeQR StructMenu StructGeneralPot StructImages StructDatabaseInfo StructSettings -->
+                        <div class="ListMenu topButtons pageOverlay MakeQR StructMenu StructGeneralPot StructImages StructDatabaseInfo StructSettings">
                             <button type="button" class="divbutton NewCamera" title="Use camera -- new piece or assign later" onClick="globalPot.pushPixButton()">New Photo &#128247;</button>            
                             <button type="button" class="divbutton NewCamera" title="Get image -- new piece or assign later" onClick="globalPot.pushGalleryButton()" >New Gallery &#128444;</button>            
                             <button type="button" class="divbutton return" onclick="globalPage.show( 'back' )">Return</button>
@@ -157,7 +157,7 @@
                                     <button type="button" class="divbutton MainBold" onclick="globalPage.show( 'Help' )">Instructions</button>
                                 </div>
                                 <div class="PotProcButtons">
-                                    <button type="button" class="divbutton MainItalic" onclick="globalPage.show( 'MakeURL' )" title="Link to this database">QR code and link</button>
+                                    <button type="button" class="divbutton MainItalic" onclick="globalPage.show( 'MakeQR' )" title="Link to this database">QR code and link</button>
                                     <button type="button" class="divbutton delete MainItalic" onclick="globalPage.show( 'Advanced' )">Advanced Options</button>
                                 </div>
                             </div>
@@ -185,15 +185,15 @@
                             </div>
                         </div>
                     </div>
-                    <!-- body: MakeURL  -->
-                    <div class="MakeURL pageOverlay">
+                    <!-- body: MakeQR  -->
+                    <div class="MakeQR pageOverlay">
                         <div class="content_box">   
                             <span id="URLtitle" class="ContentTitle">Web Link</span>
                             <div id="MakeURLContent" class="buttonmenu">
                                 <canvas id="qr" width=300 height=300></canvas>
                                 <hr>
                                 <a class="divbutton MainBold" id="MakeURLtext">Link</a>
-                                <button type="button" class="divbutton MainBold" id="CopyURLtext" onclick="globalPage.copy_to_clip()">Copy to Clipboard</button>
+                                <button type="button" class="divbutton MainBold" id="CopyURLtext">Copy to Clipboard</button>
                             </div>
                         </div>
                     </div>

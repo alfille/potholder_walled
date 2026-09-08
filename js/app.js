@@ -261,7 +261,7 @@ class CSV { // convenience class
     }
     
     download( csv ) {
-        const filename = `${globalDatabase.database}_${globalDatabase.username}.csv` ;
+        const filename = `${globalAddress.database}.csv` ;
         const htype = "text/csv" ;
         //htype the file type i.e. text/csv
         const blub = new Blob([csv], {type: htype});
@@ -322,51 +322,6 @@ class CSV { // convenience class
 }
 
 globalThis.csv = () => new CSV() ;
-
-class Log{
-    // Logs errors and shows error page
-    // unfortunately hides offending line
-    constructor() {
-        this.list = [];
-    }
-    
-    err( err, title=null ) {
-        // generic console.log of error
-        const ttl = title ?? globalPage.current() ;
-        const msg = err.message ?? err ;
-        this.list.push(`${ttl}: ${msg}`);
-        if ( globalSettings?.console == "true" ) {
-            console.group() ;
-            console.log( ttl, msg ) ;
-            console.trace();
-            console.groupEnd();
-        }
-        if ( globalPage.current() == "ErrorLog" ) {
-            // update
-            this.show();
-        }
-    }
-    
-    clear() {
-        this.list = ["Error log cleared"] ;
-        this.show();
-    }
-    
-    show() {
-        const cont = document.getElementById("ErrorLogContent") ;
-        cont.innerHTML="";
-        const ul = document.createElement('ul');
-        cont.appendChild(ul);
-        this.list
-        .forEach( e => {
-            const l = document.createElement('li');
-            l.innerText=e;
-            //l.appendChild( document.createTextNode(e) ) ;
-            ul.appendChild(l) ;
-        });
-    }
-}
-globalLog = new Log() ;
 
 class DatabaseManager { // convenience class
     // Access to remote (cloud) version of database
@@ -599,7 +554,7 @@ class DatabaseManager { // convenience class
     }
     
     clearLocal() {
-        const remove = confirm("Remove the eMission data and your credentials from this device?\nThe central database will not be affected.") ;
+        const remove = confirm("Remove the data from this device?\nThe central database will not be affected.") ;
         if ( remove ) {
             globalStorage.clear();
             // clear (local) database
@@ -612,6 +567,123 @@ class DatabaseManager { // convenience class
 
 }
 globalDatabase = new DatabaseManager() ;
+
+class Log{
+    // Logs errors and shows error page
+    // unfortunately hides offending line
+    constructor() {
+        this.list = [];
+    }
+    
+    err( err, title=null ) {
+        // generic console.log of error
+        const ttl = title ?? globalPage.current() ;
+        const msg = err.message ?? err ;
+        this.list.push(`${ttl}: ${msg}`);
+        if ( globalSettings?.console == "true" ) {
+            console.group() ;
+            console.log( ttl, msg ) ;
+            console.trace();
+            console.groupEnd();
+        }
+        if ( globalPage.current() == "ErrorLog" ) {
+            // update
+            this.show();
+        }
+    }
+    
+    clear() {
+        this.list = ["Error log cleared"] ;
+        this.show();
+    }
+    
+    show() {
+        const cont = document.getElementById("ErrorLogContent") ;
+        cont.innerHTML="";
+        const ul = document.createElement('ul');
+        cont.appendChild(ul);
+        this.list
+        .forEach( e => {
+            const l = document.createElement('li');
+            l.innerText=e;
+            //l.appendChild( document.createTextNode(e) ) ;
+            ul.appendChild(l) ;
+        });
+    }
+}
+globalLog = new Log() ;
+
+class Pagelist {
+    // list of subclasses = displayed "pages"
+    static pages = {} ;
+    
+    constructor() {
+        Pagelist.pages[this.constructor.name] = this ;
+    }
+
+    show_page(name, detail=null) {
+        // console.log("showpage",name,detail);
+        // reset buttons from edit mode
+        document.querySelector(".potDataEdit").style.display="none"; 
+        document.querySelectorAll(".topButtons")
+            .forEach( tb => tb.style.display = "block" );
+
+        // hide all but current page
+        document.querySelectorAll(".pageOverlay")
+            .forEach( po => po.style.display = po.classList.contains(name) ? "block" : "none" );
+
+        // hide Thumbnails
+        globalThumbs.hide() ;
+        
+        // hide Crop
+        document.getElementById("crop_page").style.display="none" ;
+        
+        this.show_content(detail);
+    }
+    
+    show_content() {
+        // default version, derived classes may overrule
+        // Simple menu page
+    }
+}
+
+new class Help extends Pagelist {
+    show_content() {
+        window.open( new URL(`https://alfille.github.io/potholder`,location.href).toString(), '_blank' );
+        globalPage.show("back");
+    }
+}() ;
+
+class PagelistThumblist extends Pagelist {
+    show_content() {
+        globalThumbs.show() ;
+    }
+}
+new class Advanced extends PagelistThumblist {}() ;
+new class Administration extends PagelistThumblist {}() ;
+new class Developer extends PagelistThumblist {}() ;
+new class StructMenu extends PagelistThumblist {}() ;
+
+new class DatabaseInfo extends Pagelist {
+    show_content() {
+        new StatBox() ;
+        globalDatabase.db.info()
+        .then( doc => {
+            globalPotData = new PotDataReadonly( doc, structDatabaseInfo );
+            })
+        .catch( err => globalLog.err(err) );
+        globalThumbs.show() ;
+    }
+
+}() ;
+
+new class Settings extends Pagelist {
+    show_content() {
+        new TextBox("Display Settings") ;
+        const doc = Object.assign( {}, globalSettings ) ;
+        globalPotData = new SettingsData( doc, structSettings );
+    }
+}() ;
 
 class Storage { //convenience class
     // all values placed in global scope as well
@@ -650,76 +722,7 @@ class Storage { //convenience class
 }
 globalStorage = new Storage() ;
 
-class Pagelist {
-    // list of subclasses = displayed "pages"
-    static pages = {} ;
-    
-    constructor() {
-        Pagelist.pages[this.constructor.name] = this ;
-    }
-
-    show_page(name, detail=null) {
-        // console.log("showpage",name,detail);
-        // reset buttons from edit mode
-        document.querySelector(".potDataEdit").style.display="none"; 
-        document.querySelectorAll(".topButtons")
-            .forEach( tb => tb.style.display = "block" );
-
-        // hide all but current page
-        document.querySelectorAll(".pageOverlay")
-            .forEach( po => po.style.display = po.classList.contains(name) ? "block" : "none" );
-
-        // hide Thumbnails
-        globalThumbs.hide() ;
-        
-        // hide Crop
-        document.getElementById("crop_page").style.display="none" ;
-        
-        this.show_content(detail);
-    }
-    
-    show_content() {
-        // default version, derived classes may overrule
-        // Simple menu page
-    }
-}
-
-class PagelistThumblist extends Pagelist {
-    show_content() {
-        globalThumbs.show() ;
-    }
-}
-
-new class Advanced extends PagelistThumblist {}() ;
-
-new class Administration extends PagelistThumblist {}() ;
-
-new class Developer extends PagelistThumblist {}() ;
-
-new class StructMenu extends PagelistThumblist {}() ;
-
-new class DatabaseInfo extends Pagelist {
-    show_content() {
-        new StatBox() ;
-        globalDatabase.db.info()
-        .then( doc => {
-            globalPotData = new PotDataReadonly( doc, structDatabaseInfo );
-            })
-        .catch( err => globalLog.err(err) );
-        globalThumbs.show() ;
-    }
-
-}() ;
-
-new class Settings extends Pagelist {
-    show_content() {
-        new TextBox("Display Settings") ;
-        const doc = Object.assign( {}, globalSettings ) ;
-        globalPotData = new SettingsData( doc, structSettings );
-    }
-}() ;
-
-new class MakeURL extends Pagelist {
+new class MakeQR extends Pagelist {
     show_content() {
         new StatBox() ;
         document.getElementById("URLtitle").innerText = "Web Link" ;
@@ -729,6 +732,12 @@ new class MakeURL extends Pagelist {
             size: 300,
         });
         document.getElementById("MakeURLtext").href = globalAddress.bare_url.href ;
+        document.getElementById("CopyURLtext").onclick = () => {
+            navigator.clipboard.writeText( globalAddress.bare_url.toString() )
+            .catch( err => globalLog.err(err) );
+            } ;
+    }
+             ;
     }
 }() ;
 
@@ -744,13 +753,6 @@ new class PotPrint extends Pagelist {
         } else {
             globalPage.show( "back" );
         }
-    }
-}() ;
-
-new class Help extends Pagelist {
-    show_content() {
-        window.open( new URL(`https://alfille.github.io/potholder`,location.href).toString(), '_blank' );
-        globalPage.show("back");
     }
 }() ;
 
@@ -1150,13 +1152,7 @@ class Page { // singleton class
                 globalPage.show("MainMenu") ;
                 break ;
         }
-    }
-
-    copy_to_clip() {
-        navigator.clipboard.writeText( document.getElementById("MakeURLtext").href )
-        .catch( err => globalLog.err(err) );
-    }
-    
+    }    
 }
 
 globalPage = new Page();
