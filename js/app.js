@@ -737,8 +737,6 @@ new class MakeQR extends Pagelist {
             .catch( err => globalLog.err(err) );
             } ;
     }
-             ;
-    }
 }() ;
 
 new class PotPrint extends Pagelist {
