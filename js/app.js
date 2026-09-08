@@ -731,13 +731,16 @@ new class MakeQR extends Pagelist {
         new StatBox() ;
         document.getElementById("URLtitle").innerText = "Web Link" ;
         new QRious( {
-            value: globalAddress.bare_url.href,
+//            value: globalAddress.bare_url.href,
+            value: address.bare_url.href,
             element: document.getElementById("qr"),
             size: 300,
         });
-        document.getElementById("MakeURLtext").href = globalAddress.bare_url.href ;
+//        document.getElementById("MakeURLtext").href = globalAddress.bare_url.href ;
+        document.getElementById("MakeURLtext").href = address.bare_url.href ;
         document.getElementById("CopyURLtext").onclick = () => {
-            navigator.clipboard.writeText( globalAddress.bare_url.toString() )
+//            navigator.clipboard.writeText( globalAddress.bare_url.toString() )
+            navigator.clipboard.writeText( address.bare_url.toString() )
             .catch( err => globalLog.err(err) );
             } ;
     }
@@ -1251,7 +1254,8 @@ window.onload = () => {
     
     // set database from URL
     console.log("Address");
-    const new_address = globalAddress.test_and_store() ;
+//    const new_address = globalAddress.test_and_store() ;
+    const new_address = address.test_and_store() ;
     globalDatabase.acquire_and_listen() ; // look for database
 
     if ( new URL(location.href).searchParams.size > 0 ) {
@@ -1314,7 +1318,8 @@ window.onload = () => {
         
     } else {
         // bad database usl
-        window.location.href = globalAddress.get_main().href ;
+//        window.location.href = globalAddress.get_main().href ;
+        window.location.href = address.get_main().href ;
     }
 };
 
