@@ -321,8 +321,9 @@ class CSV { // convenience class
         .catch( err => globalLog.err(err) ) ;
     }
 }
-
-globalThis.csv = () => new CSV() ;
+export default CSV;
+const csv = new CSV() ;
+//globalThis.csv = () => new CSV() ;
 
 class DatabaseManager { // convenience class
     // Access to remote (cloud) version of database
