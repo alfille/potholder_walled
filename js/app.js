@@ -1226,7 +1226,7 @@ class Address {
 }
 //globalAddress = new Address() ;
 export default Address;
-const address = Address() ;
+const address = new Address() ;
 
 // Application starting point
 window.onload = () => {
