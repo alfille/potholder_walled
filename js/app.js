@@ -252,7 +252,7 @@ globalThis. cloneClass = ( fromClass, target ) => {
         .forEach( cc => target.appendChild(cc.cloneNode(true) ) );
 } ;
 
-class CSV { // convenience class
+export class CSV { // convenience class
     constructor() {
         this.columns = [
             "type", "series", "location", "start_date", "artist", "firing", "weight_start","weight_end", "construction", "clay.type", "glaze.type", "kiln"
@@ -321,8 +321,7 @@ class CSV { // convenience class
         .catch( err => globalLog.err(err) ) ;
     }
 }
-export default CSV;
-const csv = new CSV() ;
+export const csv = new CSV() ;
 //globalThis.csv = () => new CSV() ;
 
 class DatabaseManager { // convenience class
@@ -1163,7 +1162,7 @@ class Page { // singleton class
 
 globalPage = new Page();
 
-class Address {
+export class Address {
     test_and_store() {
         // get and parse url -- essentially initilisation of this class
         this.url = new URL(window.location.href);
@@ -1229,7 +1228,6 @@ class Address {
     }
 }
 //globalAddress = new Address() ;
-export default Address;
 const address = new Address() ;
 
 // Application starting point
