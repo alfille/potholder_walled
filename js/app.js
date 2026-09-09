@@ -517,7 +517,7 @@ export class DatabaseManager { // convenience class
                 console.log("created");
                 })
             .catch( err => {
-                console.log("Bad destroy"),err);
+                console.log("Bad destroy",err);
                 }); // open local copy
             console.log("opened ",globalThis.database);
         }
