@@ -510,9 +510,15 @@ export class DatabaseManager { // convenience class
     
     open() { // local
         if ( globalThis.database && (globalThis.database !== "") ) {
-            this.db.destroy().
-            then ( ()=> { this.db = new PouchDB( globalThis.database, {auto_compaction: true} ) ; }
-            ); // open local copy
+            this.db.destroy()
+            .then ( ()=> { 
+                console.log("destroy"); 
+                this.db = new PouchDB( globalThis.database, {auto_compaction: true} ) ; 
+                console.log("created");
+                })
+            .catch( err => {
+                console.log("Bad destroy"),err);
+                }); // open local copy
             console.log("opened ",globalThis.database);
         }
     }
