@@ -716,7 +716,7 @@ export class DatabaseManager { // convenience class
 
 }
 
-export database = new DatabaseManager() ;
+export const database = new DatabaseManager() ;
 
 export const pot = new Pot() ;
 
