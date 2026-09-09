@@ -313,7 +313,7 @@ export class CSV { // convenience class
     }
     
     make_table() {
-        globalPot.getAllIdDoc()
+        globalThis.globalPot.getAllIdDoc()
         .then( docs => docs.rows.map( r => this.make_row( this.columns.map( c => this.get_text( c, r.doc ) ) ) ) )
         .then( data => data.join("\n") )
         .then( data => [this.make_headings(), data].join("\n") )
