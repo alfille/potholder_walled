@@ -20,7 +20,6 @@ import {
     DatabaseData,
     PotNewData,
     PotDataPrint,
-    database,
 } from "./doc_data.js" ;
 
 const structGeneralPot = [
@@ -484,7 +483,7 @@ export class DatabaseManager { // convenience class
         this.remoteDB = null;
         this.problem = false ; // separates real connection problem from just network offline
         this.synctext = document.getElementById("syncstatus");
-        this.db = null ;
+        this.db = new PouchDB( "default" ) ;
         
     }
     
@@ -511,7 +510,9 @@ export class DatabaseManager { // convenience class
     
     open() { // local
         if ( globalThis.database && (globalThis.database !== "") ) {
-            this.db = new PouchDB( globalThis.database, {auto_compaction: true} ); // open local copy
+            this.db.destroy().
+            then ( ()=> { this.db = new PouchDB( globalThis.database, {auto_compaction: true} ) ; }
+            ); // open local copy
             console.log("opened ",globalThis.database);
         }
     }
