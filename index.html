@@ -269,7 +269,7 @@
                                 </div>
                                 <div class="PotProcButtons">
                                     <button type="button" class="divbutton MainBold" onclick="csv()" title="CSV file (no pictures)">Download Spreadsheet</button>
-                                    <button type="button" class="divbutton delete MainItalic" onclick="globalDatabase.clearLocal()">Clear local data</button>
+                                    <button type="button" class="divbutton delete MainItalic" onclick="database.clearLocal()">Clear local data</button>
                                 </div>
                             </div>
                         </div>
@@ -284,7 +284,7 @@
                                     <button type="button" class="divbutton MainItalic" onclick="globalPage.show( 'ErrorLog' )">Error Log</button>
                                 </div>
                                 <div class="PotProcButtons">
-                                    <button type="button" class="divbutton" onclick="globalDatabase.fauxton()" title="Open Couchdb Fauxton console">Database Console</button>
+                                    <button type="button" class="divbutton" onclick="database.fauxton()" title="Open Couchdb Fauxton console">Database Console</button>
                                     <button type="button" class="divbutton" onclick="globalPage.show( 'DatabaseInfo' )">Database Information</button>
                                 </div>
                             </div>

@@ -225,7 +225,6 @@ globalThis. potId = null ;
 // singleton class instances
 //globalThis. globalAddress  = null ;
 globalThis. globalCropper  = null ;
-globalThis. globalDatabase = null ;
 globalThis. globalLog      = null ;
 globalThis. globalPage     = null ;
 globalThis. globalPotData  = null ;
@@ -262,8 +261,8 @@ export class Pot { // convenience class
             _id: Id_pot.makeId( this.doc ),
             type:"",
             series:"",
-            author: globalDatabase.username,
-            artist: globalDatabase.username,
+            author: database.username,
+            artist: database.username,
             start_date: (new Date()).toISOString().split("T")[0],
             stage: "greenware",
             kiln: "none",
@@ -272,11 +271,11 @@ export class Pot { // convenience class
    
     del() {
         if ( this.isSelected() ) {        
-            globalDatabase.db.get( globalThis.potId )
+            database.db.get( globalThis.potId )
             .then( (doc) => {
                 // Confirm question
                 if (confirm(`WARNING -- about to delete this piece\n piece type << ${doc?.type} >> of series << ${doc.series} >>\nPress CANCEL to back out`)==true) {
-                    return globalDatabase.db.remove(doc) ;
+                    return database.db.remove(doc) ;
                 } else {
                     throw "Cancel";
                 }           
@@ -300,7 +299,7 @@ export class Pot { // convenience class
             include_docs: true,
             attachments: false,
         };
-        return globalDatabase.db.allDocs(doc);
+        return database.db.allDocs(doc);
     }
         
     select( pid = globalThis.potId ) {
@@ -336,14 +335,14 @@ export class Pot { // convenience class
             return Promise.resolve(true) ;
         }
         const f = i_list.pop() ;
-        return globalDatabase.db.get( pid )
+        return database.db.get( pid )
         .then( doc => {
             if ( !("images" in doc ) ) {
                 doc.images = [] ;
             }
             if ( doc.images.find( e => e.image == f.name ) ) {
                 // exists, just update attachment
-                return globalDatabase.db.putAttachment( pid, f.name, doc._rev, f, f.type )
+                return database.db.putAttachment( pid, f.name, doc._rev, f, f.type )
                     .catch( err => globalLog.err(err)) ;
             } else {
                 // doesn't exist, add images entry as well (to front)
@@ -352,8 +351,8 @@ export class Pot { // convenience class
                     comment: "",
                     date: (f?.lastModifiedDate ?? (new Date())).toISOString(),
                     } );
-                return globalDatabase.db.put( doc )
-                    .then( r => globalDatabase.db.putAttachment( r.id, f.name, r.rev, f, f.type ) ) ;
+                return database.db.put( doc )
+                    .then( r => database.db.putAttachment( r.id, f.name, r.rev, f, f.type ) ) ;
             }
             })
         .then( _ => this.save_pic( pid, i_list ) ) ; // recursive
@@ -386,7 +385,7 @@ export class Pot { // convenience class
     AssignToNew() {
         const doc = this.create() ;
         //console.log("new",doc);
-        globalDatabase.db.put( doc )
+        database.db.put( doc )
         .then( response => this.AssignPhoto( response.id ) )
         .catch( err => {
             globalLog.err(err);
@@ -455,7 +454,7 @@ class Id_pot {
         return [
             this.version,
             this.type,
-            globalDatabase.username,
+            database.username,
             new Date().toISOString(),
             Math.floor( Math.random() * 1000 ),
             ].join(";");
@@ -470,82 +469,7 @@ class Id_pot {
     }
 }
 
-
-export const pot = new Pot() ;
-
-export class CSV { // convenience class
-    constructor() {
-        this.columns = [
-            "type", "series", "location", "start_date", "artist", "firing", "weight_start","weight_end", "construction", "clay.type", "glaze.type", "kiln"
-            ] ;
-        this.make_table() ;
-    }
-    
-    download( csv ) {
-//        const filename = `${globalAddress.database}.csv` ;
-        const filename = `${address.database}.csv` ;
-        const htype = "text/csv" ;
-        //htype the file type i.e. text/csv
-        const blub = new Blob([csv], {type: htype});
-        const link = document.createElement("a");
-        link.download = filename;
-        link.href = window.URL.createObjectURL(blub);
-        link.style.display = "none";
-
-        document.body.appendChild(link);
-        link.click(); // press invisible button
-        
-        // clean up
-        // Add "delay" see: https://www.stefanjudis.com/snippets/how-trigger-file-downloads-with-javascript/
-        setTimeout( () => {
-            window.URL.revokeObjectURL(link.href) ;
-            document.body.removeChild(link) ;
-        });
-    }
-
-    make_headings() {
-        return this.make_row( this.columns.map( c => c.split(".")[0] ) ) ;
-    } 
-
-    get_text( combined_field, doc ) {
-        const com = combined_field.split(".") ;
-        switch (com.length) {
-            case 0:
-                return "" ;
-            case 1:
-                if ( com[0] in doc ) {
-                    return doc[com[0]] ;
-                }
-                return "" ;
-
-            case 2:
-                if ( com[0] in doc ) {
-                    return doc[com[0]].map( s => s[com[1]] ).join(", ") ;
-                }
-                return "" ;
-
-        }
-    } 
-
-    make_row( row ) {
-        return row
-        .map( r => (isNaN(r) || (r=="")) ? `"${r}"` : r )
-        .join(",");
-    }
-    
-    make_table() {
-        pot.getAllIdDoc()
-        .then( docs => docs.rows.map( r => this.make_row( this.columns.map( c => this.get_text( c, r.doc ) ) ) ) )
-        .then( data => data.join("\n") )
-        .then( data => [this.make_headings(), data].join("\n") )
-        .then( csv => this.download( csv ) )
-        .catch( err => globalLog.err(err) ) ;
-    }
-}
-export const csv = new CSV() ;
-//globalThis.csv = () => new CSV() ;
-
-class DatabaseManager { // convenience class
+export class DatabaseManager { // convenience class
     // Access to remote (cloud) version of database
     constructor() {
         this.AUTH_STATUS_TIMEOUT_MS = 20000 ; //20 seconds
@@ -712,7 +636,7 @@ class DatabaseManager { // convenience class
     
     syncer() {
         this.status("good","Starting database intermittent sync");
-        globalDatabase.db.sync( this.remoteDB ,
+        database.db.sync( this.remoteDB ,
             {
                 live: true,
                 retry: true,
@@ -783,7 +707,7 @@ class DatabaseManager { // convenience class
         if ( remove ) {
             globalStorage.clear();
             // clear (local) database
-            globalDatabase.db.destroy()
+            database.db.destroy()
             .finally( _ => location.reload() ); // force reload
         } else {
             globalPage.show( "MainMenu" );
@@ -791,7 +715,82 @@ class DatabaseManager { // convenience class
     }
 
 }
-globalDatabase = new DatabaseManager() ;
+
+export database = new DatabaseManager() ;
+
+export const pot = new Pot() ;
+
+export class CSV { // convenience class
+    constructor() {
+        this.columns = [
+            "type", "series", "location", "start_date", "artist", "firing", "weight_start","weight_end", "construction", "clay.type", "glaze.type", "kiln"
+            ] ;
+        this.make_table() ;
+    }
+    
+    download( csv ) {
+//        const filename = `${globalAddress.database}.csv` ;
+        const filename = `${address.database}.csv` ;
+        const htype = "text/csv" ;
+        //htype the file type i.e. text/csv
+        const blub = new Blob([csv], {type: htype});
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = window.URL.createObjectURL(blub);
+        link.style.display = "none";
+
+        document.body.appendChild(link);
+        link.click(); // press invisible button
+        
+        // clean up
+        // Add "delay" see: https://www.stefanjudis.com/snippets/how-trigger-file-downloads-with-javascript/
+        setTimeout( () => {
+            window.URL.revokeObjectURL(link.href) ;
+            document.body.removeChild(link) ;
+        });
+    }
+
+    make_headings() {
+        return this.make_row( this.columns.map( c => c.split(".")[0] ) ) ;
+    } 
+
+    get_text( combined_field, doc ) {
+        const com = combined_field.split(".") ;
+        switch (com.length) {
+            case 0:
+                return "" ;
+            case 1:
+                if ( com[0] in doc ) {
+                    return doc[com[0]] ;
+                }
+                return "" ;
+
+            case 2:
+                if ( com[0] in doc ) {
+                    return doc[com[0]].map( s => s[com[1]] ).join(", ") ;
+                }
+                return "" ;
+
+        }
+    } 
+
+    make_row( row ) {
+        return row
+        .map( r => (isNaN(r) || (r=="")) ? `"${r}"` : r )
+        .join(",");
+    }
+    
+    make_table() {
+        pot.getAllIdDoc()
+        .then( docs => docs.rows.map( r => this.make_row( this.columns.map( c => this.get_text( c, r.doc ) ) ) ) )
+        .then( data => data.join("\n") )
+        .then( data => [this.make_headings(), data].join("\n") )
+        .then( csv => this.download( csv ) )
+        .catch( err => globalLog.err(err) ) ;
+    }
+}
+export const csv = new CSV() ;
+//globalThis.csv = () => new CSV() ;
 
 class Log{
     // Logs errors and shows error page
@@ -892,7 +891,7 @@ new class StructMenu extends PagelistThumblist {}() ;
 new class DatabaseInfo extends Pagelist {
     show_content() {
         new StatBox() ;
-        globalDatabase.db.info()
+        database.db.info()
         .then( doc => {
             globalPotData = new PotDataReadonly( doc, structDatabaseInfo );
             })
@@ -970,7 +969,7 @@ new class MakeQR extends Pagelist {
 new class PotPrint extends Pagelist {
     show_content() {
         if ( pot.isSelected() ) {
-            globalDatabase.db.get( globalThis.potId )
+            database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotDataPrint( doc, structData.Data.concat(structData.Images) ) )
             .catch( (err) => {
                 globalLog.err(err);
@@ -1143,7 +1142,7 @@ new class PotNew extends Pagelist {
         new TextBox("New Piece");
         if ( pot.isSelected() ) {
             // existing but "new"
-            globalDatabase.db.get( globalThis.potId )
+            database.db.get( globalThis.potId )
             .then( doc => globalPotData = new PotNewData( doc, structData.Data ) )
             .catch( err => globalLog.err(err) ) ;
         } else {
@@ -1155,7 +1154,7 @@ new class PotNew extends Pagelist {
 new class PotEdit extends Pagelist {
     show_content() {
         if ( pot.isSelected() ) {
-            globalDatabase.db.get( globalThis.potId )
+            database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Data ))
              .catch( (err) => {
                 globalLog.err(err);
@@ -1171,7 +1170,7 @@ new class PotEdit extends Pagelist {
 new class PotPix extends Pagelist {
     show_content() {
         if ( pot.isSelected() ) {
-            globalDatabase.db.get( globalThis.potId )
+            database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
                 globalLog.err(err);
@@ -1187,7 +1186,7 @@ new class PotPix extends Pagelist {
 new class PotPixEdit extends Pagelist {
     show_content(img_name) {
         if ( pot.isSelected() ) {
-            globalDatabase.db.get( globalThis.potId )
+            database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotDataEditMode( doc, structData.Images, img_name ))
             .catch( (err) => {
                 globalLog.err(err);
@@ -1205,7 +1204,7 @@ new class PotPixLoading extends Pagelist {
         document.querySelector(".ContentTitleHidden").style.display = "block";
         globalPage.forget() ;
         if ( pot.isSelected() ) {
-            globalDatabase.db.get( globalThis.potId )
+            database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
                 globalLog.err(err);
@@ -1220,7 +1219,7 @@ new class PotPixLoading extends Pagelist {
 new class PotMenu extends Pagelist {
     show_content() {
         if ( pot.isSelected() ) {
-            globalDatabase.db.get( globalThis.potId )
+            database.db.get( globalThis.potId )
             .then( (doc) => pot.showPictures(doc) ) // pictures at bottom
             .catch( (err) => {
                 globalLog.err(err);
@@ -1476,7 +1475,7 @@ window.onload = () => {
     console.log("Address");
 //    const new_address = globalAddress.test_and_store() ;
     const new_address = address.test_and_store() ;
-    globalDatabase.acquire_and_listen() ; // look for database
+    database.acquire_and_listen() ; // look for database
 
     if ( new URL(location.href).searchParams.size > 0 ) {
         // reload without search params -- placed in Cookies
@@ -1495,8 +1494,8 @@ window.onload = () => {
     }) ) ; 
 
     // Start pouchdb database
-    globalDatabase.open() ;       
-    if ( globalDatabase.db ) {
+    database.open() ;       
+    if ( database.db ) {
         // Thumbnails
         globalThumbs.setup() ; // just getting canvas from doc
 
@@ -1508,7 +1507,7 @@ window.onload = () => {
         ;
 
         // now start listening for any changes to the database
-        globalDatabase.db.changes({ 
+        database.db.changes({ 
             since: 'now', 
             live: true, 
             include_docs: false 
@@ -1528,7 +1527,7 @@ window.onload = () => {
 
         // start sync with remote database
         console.log("Get Remote");
-        globalDatabase.foreverSync();
+        database.foreverSync();
 
         // Show screen
         ((globalSettings.fullscreen=="always") ?
@@ -1574,7 +1573,7 @@ class ListBox extends TitleBox {
 class StatBox extends TitleBox {
     constructor() {
         super();
-        globalDatabase.db.query("qPictures", { reduce:true, group: false })
+        database.db.query("qPictures", { reduce:true, group: false })
         .then( stat => this.show( `Pieces: ${stat.rows[0].value.count}, Pictures: ${stat.rows[0].value.sum}` ) )
         .catch( _ => this.show( 'No Pieces, yet' ) );
     }
@@ -1601,24 +1600,24 @@ class Query {
             },
         }) );
         return Promise.all( queries.map( (ddoc) => {
-            globalDatabase.db.get( ddoc._id )
+            database.db.get( ddoc._id )
             .then( doc => {
                 // update if version number has changed
                 if ( this.version !== doc.version ) {
                     ddoc._rev = doc._rev;
                     ddoc.version = this.version ;
-                    return globalDatabase.db.put( ddoc );
+                    return database.db.put( ddoc );
                 } else {
                     return Promise.resolve(true);
                 }
                 })
             .catch( () => {
                 // assume because this is first time and cannot "get"
-                return globalDatabase.db.put( ddoc );
+                return database.db.put( ddoc );
                 });
             }))
         .then( _ => this.prune_queries() )
-        .then( _ => globalDatabase.db.viewCleanup() )
+        .then( _ => database.db.viewCleanup() )
         .catch( (err) => globalLog.err(err) );
     }
     
@@ -1659,13 +1658,13 @@ class Query {
     
     prune_queries() {
         // remove old entries (don't match version string)
-        return globalDatabase.db.allDocs( {
+        return database.db.allDocs( {
             startkey: "_design/",
             endkey:   "_design/\uffff",
             include_docs: true,
         } )
         .then( docs => docs.rows.filter( r=> r.doc.version !== this.version ) )
-        .then( rows => Promise.all( rows.map( r => globalDatabase.db.remove(r.doc)) ) ) ;
+        .then( rows => Promise.all( rows.map( r => database.db.remove(r.doc)) ) ) ;
     }
 }
 
@@ -1680,7 +1679,7 @@ class PotImages {
     }
 
     getURL( img_name ) {
-        return globalDatabase.db.getAttachment( this.pid, img_name )
+        return database.db.getAttachment( this.pid, img_name )
         .then( data => URL.createObjectURL(data) ) ;
     }
     
@@ -1852,7 +1851,7 @@ class Thumb {
             return ;
         }
 
-        globalDatabase.db.getAttachment(pid, doc.images[0].image )
+        database.db.getAttachment(pid, doc.images[0].image )
         .then(data => {
             const url = URL.createObjectURL(data) ;
             const t_img = new Image();
@@ -1875,7 +1874,7 @@ class Thumb {
     }
 
     getOne( pid = globalThis.potId ) {
-        return globalDatabase.db.get( pid )
+        return database.db.get( pid )
         .then( doc => this._create(doc) )
         .then( _ => this.replot() )
         .catch( err => globalLog.err(err) );
@@ -2380,7 +2379,7 @@ class Search { // singleton class
         if ( needle.length == 0 ) {
             return this.resetTable();
         }
-        globalDatabase.db.search(
+        database.db.search(
             { 
                 query: needle,
                 fields: this.fields,

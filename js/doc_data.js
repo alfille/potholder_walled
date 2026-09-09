@@ -21,6 +21,7 @@ export {
 import {
     PotImages,
     pot,
+    database,
 } from "./app.js" ;
     
 // data entry page type
@@ -71,7 +72,7 @@ class PotDataRaw { // singleton class
         const data_change = this.loadDocData() ; // also sets this.doc
         if ( data_change ) {
             // doc is changed
-            globalDatabase.db.put( this.doc )
+            database.db.put( this.doc )
             .then( r => new Detachment( r.id, r.rev ) )
             .then( D => D.remove( deleted_images) )
             .then( _ => globalThumbs.getOne( this.doc._id ) )
@@ -159,7 +160,7 @@ class PotNewData extends PotDataEditMode {
     
     savePieceData() {
         this.loadDocData();
-        globalDatabase.db.put( this.doc )
+        database.db.put( this.doc )
         .then( (response) => {
             pot.select(response.id) ;
             globalPage.show( "PotMenu" ) ;
@@ -173,7 +174,7 @@ class PotNewData extends PotDataEditMode {
 class DatabaseData extends PotDataRaw {
     // starts with "EDIT" clicked
     constructor(doc,struct) {
-        if ( globalDatabase.database=="" ) {
+        if ( database.database=="" ) {
             // First time
             super(true,doc,struct); // clicked = true
         } else {
@@ -183,8 +184,8 @@ class DatabaseData extends PotDataRaw {
 
     savePieceData() {
         if ( this.loadDocData() ) {
-            ["username","database","local"].forEach( x => globalDatabase[x] = this.doc[x] ) ;
-            globalDatabase.store() ;
+            ["username","database","local"].forEach( x => database[x] = this.doc[x] ) ;
+            database.store() ;
         }
         globalPage.reset();
         location.reload(); // force reload
@@ -217,7 +218,7 @@ class Detachment {
     remove( i_list ) {
         if ( i_list && i_list.length>0 ) {
             const name = i_list.pop() ;
-            return globalDatabase.db.removeAttachment( this.pid, name, this.rev )
+            return database.db.removeAttachment( this.pid, name, this.rev )
                 .then( r => {
                     this.rev = r.rev ;
                     return this.remove( i_list ) ;
@@ -371,7 +372,7 @@ class EntryList {
         // can work even if no queries    
         return Promise.all( this.members
             .filter( all_item => "query"   in all_item.struct )
-            .map( query_item => globalDatabase.db.query( query_item.struct.query, {group:true,reduce:true} )
+            .map( query_item => database.db.query( query_item.struct.query, {group:true,reduce:true} )
             .then( q_result => q_result.rows
                 .filter( r=>r.key )
                 .filter( r=>r.value>0)
