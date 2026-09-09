@@ -228,7 +228,6 @@ globalThis. globalCropper  = null ;
 globalThis. globalDatabase = null ;
 globalThis. globalLog      = null ;
 globalThis. globalPage     = null ;
-export var pot = null ;
 globalThis. globalPotData  = null ;
 globalThis. globalSearch   = null;
 globalThis. globalSettings = {} ;
@@ -251,6 +250,177 @@ globalThis. cloneClass = ( fromClass, target ) => {
         .childNodes
         .forEach( cc => target.appendChild(cc.cloneNode(true) ) );
 } ;
+
+export class Pot { // convenience class
+    constructor() {
+        this.pictureSource = document.getElementById("HiddenPix");
+    }
+    
+    create() {
+        // create new pot record
+        return ({
+            _id: Id_pot.makeId( this.doc ),
+            type:"",
+            series:"",
+            author: globalDatabase.username,
+            artist: globalDatabase.username,
+            start_date: (new Date()).toISOString().split("T")[0],
+            stage: "greenware",
+            kiln: "none",
+           });
+    }
+   
+    del() {
+        if ( this.isSelected() ) {        
+            globalDatabase.db.get( globalThis.potId )
+            .then( (doc) => {
+                // Confirm question
+                if (confirm(`WARNING -- about to delete this piece\n piece type << ${doc?.type} >> of series << ${doc.series} >>\nPress CANCEL to back out`)==true) {
+                    return globalDatabase.db.remove(doc) ;
+                } else {
+                    throw "Cancel";
+                }           
+            })
+            .then( _ => globalThumbs.remove( globalThis.potId ) )
+            .then( _ => this.unselect() )
+            .then( _ => globalPage.show( "back" ) )
+            .catch( (err) => {
+                if (err != "Cancel" ) {
+                    globalLog.err(err);
+                    globalPage.show( "back" ) ;
+                }
+            });
+        }
+    }
+
+    getAllIdDoc() {
+        const doc = {
+            startkey: Id_pot.allStart(),
+            endkey:   Id_pot.allEnd(),
+            include_docs: true,
+            attachments: false,
+        };
+        return globalDatabase.db.allDocs(doc);
+    }
+        
+    select( pid = globalThis.potId ) {
+        globalThis.potId = pid ;
+        // Check pot existence
+        new TextBox("Piece Selected");
+    }
+
+    isSelected() {
+        return ( globalThis.potId != null ) ;
+    }
+
+    unselect() {
+        globalThis.potId = null;
+//        if ( globalPage.isThis("AllPieces") ) {
+//            const pt = document.getElementById("PotTable");
+//        }
+        new BlankBox();
+    }
+
+    pushPixButton() {
+        this.pictureSource = document.getElementById("HiddenPix");
+        this.pictureSource.click() ;
+    }
+
+    pushGalleryButton() {
+        this.pictureSource=document.getElementById("HiddenGallery");
+        this.pictureSource.click() ;
+    }
+
+    save_pic( pid=globalThis.potId, i_list=[] ) {
+        if ( i_list.length == 0 ) {
+            return Promise.resolve(true) ;
+        }
+        const f = i_list.pop() ;
+        return globalDatabase.db.get( pid )
+        .then( doc => {
+            if ( !("images" in doc ) ) {
+                doc.images = [] ;
+            }
+            if ( doc.images.find( e => e.image == f.name ) ) {
+                // exists, just update attachment
+                return globalDatabase.db.putAttachment( pid, f.name, doc._rev, f, f.type )
+                    .catch( err => globalLog.err(err)) ;
+            } else {
+                // doesn't exist, add images entry as well (to front)
+                doc.images.unshift( {
+                    image: f.name,
+                    comment: "",
+                    date: (f?.lastModifiedDate ?? (new Date())).toISOString(),
+                    } );
+                return globalDatabase.db.put( doc )
+                    .then( r => globalDatabase.db.putAttachment( r.id, f.name, r.rev, f, f.type ) ) ;
+            }
+            })
+        .then( _ => this.save_pic( pid, i_list ) ) ; // recursive
+    }
+                  
+
+    newPhoto() {
+        if ( ! pot.isSelected() ) { 
+            globalPage.show("AssignPic") ;
+            return ;
+        }
+        const i_list = [...this.pictureSource.files] ;
+        if (i_list.length==0 ) {
+            return ;
+        }
+        
+        const pid = globalThis.potId
+        globalPage.show("PotPixLoading");
+
+        this.save_pic( pid, i_list )
+        .then( () => globalThumbs.getOne( pid ) )
+        .then( () => globalPage.add( "PotMenu" ) )
+        .then( () => globalPage.show("PotPix") )
+        .catch( (err) => {
+            globalLog.err(err);
+            })
+        .finally( () => this.pictureSource.value = "" ) ;
+    }
+    
+    AssignToNew() {
+        const doc = this.create() ;
+        //console.log("new",doc);
+        globalDatabase.db.put( doc )
+        .then( response => this.AssignPhoto( response.id ) )
+        .catch( err => {
+            globalLog.err(err);
+            globalPage.show('MainMenu');
+        }) ;
+    }
+            
+    AssignPhoto(pid = globalThis.potId) {
+        const i_list = [...this.pictureSource.files] ;
+        if (i_list.length==0 ) {
+            return ;
+        }
+        globalPage.show("PotPixLoading");
+        pot.select( pid ) ;
+        this.save_pic( pid, i_list )
+        .then( _ => globalThumbs.getOne( pid ) )
+        .then( _ => globalPage.add("PotMenu" ) )
+        .then( _ => globalPage.show("PotPix") )
+        .catch( (err) => {
+            globalLog.err(err);
+            })
+        .finally( () => this.pictureSource.value = "" ) ;
+    }
+    
+    showPictures(doc) {
+        // doc alreaady loaded
+        const bottom = document.getElementById("Bottom");
+        const images = new PotImages(doc);
+        bottom.innerHTML="";
+        bottom.onclick=null;
+        images.displayAll().forEach( i => bottom.appendChild(i) ) ;
+    }
+}
+export const pot = new Pot() ;
 
 export class CSV { // convenience class
     constructor() {
@@ -1599,175 +1769,6 @@ class PotImages {
     }    
 }
 
-class Pot { // convenience class
-    constructor() {
-        this.pictureSource = document.getElementById("HiddenPix");
-    }
-    
-    create() {
-        // create new pot record
-        return ({
-            _id: Id_pot.makeId( this.doc ),
-            type:"",
-            series:"",
-            author: globalDatabase.username,
-            artist: globalDatabase.username,
-            start_date: (new Date()).toISOString().split("T")[0],
-            stage: "greenware",
-            kiln: "none",
-           });
-    }
-   
-    del() {
-        if ( this.isSelected() ) {        
-            globalDatabase.db.get( globalThis.potId )
-            .then( (doc) => {
-                // Confirm question
-                if (confirm(`WARNING -- about to delete this piece\n piece type << ${doc?.type} >> of series << ${doc.series} >>\nPress CANCEL to back out`)==true) {
-                    return globalDatabase.db.remove(doc) ;
-                } else {
-                    throw "Cancel";
-                }           
-            })
-            .then( _ => globalThumbs.remove( globalThis.potId ) )
-            .then( _ => this.unselect() )
-            .then( _ => globalPage.show( "back" ) )
-            .catch( (err) => {
-                if (err != "Cancel" ) {
-                    globalLog.err(err);
-                    globalPage.show( "back" ) ;
-                }
-            });
-        }
-    }
-
-    getAllIdDoc() {
-        const doc = {
-            startkey: Id_pot.allStart(),
-            endkey:   Id_pot.allEnd(),
-            include_docs: true,
-            attachments: false,
-        };
-        return globalDatabase.db.allDocs(doc);
-    }
-        
-    select( pid = globalThis.potId ) {
-        globalThis.potId = pid ;
-        // Check pot existence
-        new TextBox("Piece Selected");
-    }
-
-    isSelected() {
-        return ( globalThis.potId != null ) ;
-    }
-
-    unselect() {
-        globalThis.potId = null;
-//        if ( globalPage.isThis("AllPieces") ) {
-//            const pt = document.getElementById("PotTable");
-//        }
-        new BlankBox();
-    }
-
-    pushPixButton() {
-        this.pictureSource = document.getElementById("HiddenPix");
-        this.pictureSource.click() ;
-    }
-
-    pushGalleryButton() {
-        this.pictureSource=document.getElementById("HiddenGallery");
-        this.pictureSource.click() ;
-    }
-
-    save_pic( pid=globalThis.potId, i_list=[] ) {
-        if ( i_list.length == 0 ) {
-            return Promise.resolve(true) ;
-        }
-        const f = i_list.pop() ;
-        return globalDatabase.db.get( pid )
-        .then( doc => {
-            if ( !("images" in doc ) ) {
-                doc.images = [] ;
-            }
-            if ( doc.images.find( e => e.image == f.name ) ) {
-                // exists, just update attachment
-                return globalDatabase.db.putAttachment( pid, f.name, doc._rev, f, f.type )
-                    .catch( err => globalLog.err(err)) ;
-            } else {
-                // doesn't exist, add images entry as well (to front)
-                doc.images.unshift( {
-                    image: f.name,
-                    comment: "",
-                    date: (f?.lastModifiedDate ?? (new Date())).toISOString(),
-                    } );
-                return globalDatabase.db.put( doc )
-                    .then( r => globalDatabase.db.putAttachment( r.id, f.name, r.rev, f, f.type ) ) ;
-            }
-            })
-        .then( _ => this.save_pic( pid, i_list ) ) ; // recursive
-    }
-                  
-
-    newPhoto() {
-        if ( ! pot.isSelected() ) { 
-            globalPage.show("AssignPic") ;
-            return ;
-        }
-        const i_list = [...this.pictureSource.files] ;
-        if (i_list.length==0 ) {
-            return ;
-        }
-        
-        const pid = globalThis.potId
-        globalPage.show("PotPixLoading");
-
-        this.save_pic( pid, i_list )
-        .then( () => globalThumbs.getOne( pid ) )
-        .then( () => globalPage.add( "PotMenu" ) )
-        .then( () => globalPage.show("PotPix") )
-        .catch( (err) => {
-            globalLog.err(err);
-            })
-        .finally( () => this.pictureSource.value = "" ) ;
-    }
-    
-    AssignToNew() {
-        const doc = this.create() ;
-        //console.log("new",doc);
-        globalDatabase.db.put( doc )
-        .then( response => this.AssignPhoto( response.id ) )
-        .catch( err => {
-            globalLog.err(err);
-            globalPage.show('MainMenu');
-        }) ;
-    }
-            
-    AssignPhoto(pid = globalThis.potId) {
-        const i_list = [...this.pictureSource.files] ;
-        if (i_list.length==0 ) {
-            return ;
-        }
-        globalPage.show("PotPixLoading");
-        pot.select( pid ) ;
-        this.save_pic( pid, i_list )
-        .then( _ => globalThumbs.getOne( pid ) )
-        .then( _ => globalPage.add("PotMenu" ) )
-        .then( _ => globalPage.show("PotPix") )
-        .catch( (err) => {
-            globalLog.err(err);
-            })
-        .finally( () => this.pictureSource.value = "" ) ;
-    }
-    
-    showPictures(doc) {
-        // doc alreaady loaded
-        const bottom = document.getElementById("Bottom");
-        const images = new PotImages(doc);
-        bottom.innerHTML="";
-        bottom.onclick=null;
-        images.displayAll().forEach( i => bottom.appendChild(i) ) ;
-    }
-}
 
 class Id_pot {
     static type = "p";
@@ -1817,8 +1818,6 @@ class Id_pot {
         return [this.version, this.type, this.end].join(";");
     }
 }
-
-pot = new Pot() ;
 
 class Thumb {
     constructor() {
