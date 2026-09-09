@@ -228,7 +228,7 @@ globalThis. globalCropper  = null ;
 globalThis. globalDatabase = null ;
 globalThis. globalLog      = null ;
 globalThis. globalPage     = null ;
-globalThis. pot      = null ;
+export var pot = null ;
 globalThis. globalPotData  = null ;
 globalThis. globalSearch   = null;
 globalThis. globalSettings = {} ;
@@ -1818,7 +1818,7 @@ class Id_pot {
     }
 }
 
-export const pot = new Pot() ;
+pot = new Pot() ;
 
 class Thumb {
     constructor() {
