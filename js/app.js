@@ -228,7 +228,7 @@ globalThis. globalCropper  = null ;
 globalThis. globalDatabase = null ;
 globalThis. globalLog      = null ;
 globalThis. globalPage     = null ;
-globalThis. globalPot      = null ;
+globalThis. pot      = null ;
 globalThis. globalPotData  = null ;
 globalThis. globalSearch   = null;
 globalThis. globalSettings = {} ;
@@ -313,7 +313,7 @@ export class CSV { // convenience class
     }
     
     make_table() {
-        globalThis.globalPot.getAllIdDoc()
+        pot.getAllIdDoc()
         .then( docs => docs.rows.map( r => this.make_row( this.columns.map( c => this.get_text( c, r.doc ) ) ) ) )
         .then( data => data.join("\n") )
         .then( data => [this.make_headings(), data].join("\n") )
@@ -748,7 +748,7 @@ new class MakeQR extends Pagelist {
 
 new class PotPrint extends Pagelist {
     show_content() {
-        if ( globalPot.isSelected() ) {
+        if ( pot.isSelected() ) {
             globalDatabase.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotDataPrint( doc, structData.Data.concat(structData.Images) ) )
             .catch( (err) => {
@@ -763,10 +763,10 @@ new class PotPrint extends Pagelist {
 
 new class AllPieces extends Pagelist {
     show_content() {
-        globalPot.unselect() ;
+        pot.unselect() ;
         new StatBox() ;
         globalTable = new PotTable();
-        globalPot.getAllIdDoc()
+        pot.getAllIdDoc()
         .then( (docs) => globalTable.fill(docs.rows ) )
         .catch( (err) => globalLog.err(err) );
         globalThumbs.show() ;
@@ -775,10 +775,10 @@ new class AllPieces extends Pagelist {
 
 new class Orphans extends Pagelist {
     show_content() {
-        globalPot.unselect() ;
+        pot.unselect() ;
         new StatBox() ;
         globalTable = new OrphanTable();
-        globalPot.getAllIdDoc()
+        pot.getAllIdDoc()
         .then( (docs) => globalTable.fill(docs.rows ) )
         .catch( (err) => globalLog.err(err) );
         globalThumbs.show() ;
@@ -789,21 +789,21 @@ new class AssignPic extends Pagelist {
     show_content() {
         globalPage.forget(); // don't return here
         // Title adjusted to source and number
-        if ( globalPot.pictureSource.files.length == 0 ) {
+        if ( pot.pictureSource.files.length == 0 ) {
             // No pictures taken/chosen
             return ;
-        } else if (globalPot.pictureSource.id=="HiddenPix") {
+        } else if (pot.pictureSource.id=="HiddenPix") {
             new TextBox( `New Photo. Assign to which piece?` ) ;
         } else {
-            if (globalPot.pictureSource.files.length == 1 ) {
+            if (pot.pictureSource.files.length == 1 ) {
                 new TextBox( "1 image selected. Assign to which piece?" ) ;
             } else {
-                new TextBox( `${globalPot.pictureSource.files.length} images selected. Assign to which piece?` ) ;
+                new TextBox( `${pot.pictureSource.files.length} images selected. Assign to which piece?` ) ;
             }
         }
         // make table
         globalTable = new AssignTable();
-        globalPot.getAllIdDoc()
+        pot.getAllIdDoc()
         .then( (docs) => globalTable.fill(docs.rows ) )
         .catch( (err) => globalLog.err(err) );
     }
@@ -819,7 +819,7 @@ class StructShow extends Pagelist {
     }
 
     show_content() {
-        globalPot.unselect() ;
+        pot.unselect() ;
         new TextBox("Field Structure") ;
         document.getElementById("StructShowTitle").innerText=this.struct_title ?? "" ;
         document.getElementById("struct_json").innerText = JSON.stringify( this.struct_name, null, 2 ) ;
@@ -840,7 +840,7 @@ class ListGroup extends Pagelist {
     
     // "field_name" from struct in derived classes
     show_content() {
-        globalPot.unselect() ;
+        pot.unselect() ;
         const item = structData.Data.find( i => i.name == this.field_name ) ;
         if ( item ) {
             new ListBox(`grouped by ${item?.alias ?? item.name}`) ;
@@ -892,7 +892,7 @@ new class ListClay extends ListGroup {}("clay") ;
 
 new class ErrorLog extends Pagelist {
     show_content() {
-        globalPot.unselect() ;
+        pot.unselect() ;
         new TextBox("Error Log");
         globalLog.show() ;
         globalThumbs.show() ;
@@ -901,7 +901,7 @@ new class ErrorLog extends Pagelist {
 
 new class MainMenu extends Pagelist {
     show_content() {
-        globalPot.unselect();
+        pot.unselect();
         new StatBox() ;
         globalThumbs.show() ;
     }
@@ -909,7 +909,7 @@ new class MainMenu extends Pagelist {
 
 new class ListMenu extends Pagelist {
     show_content() {
-        globalPot.unselect();
+        pot.unselect();
         new StatBox() ;
         globalThumbs.show() ;
     }
@@ -920,20 +920,20 @@ new class PotNew extends Pagelist {
     show_content() {
         globalPage.forget();
         new TextBox("New Piece");
-        if ( globalPot.isSelected() ) {
+        if ( pot.isSelected() ) {
             // existing but "new"
             globalDatabase.db.get( globalThis.potId )
             .then( doc => globalPotData = new PotNewData( doc, structData.Data ) )
             .catch( err => globalLog.err(err) ) ;
         } else {
-            globalPotData = new PotNewData( globalPot.create(), structData.Data ) ;
+            globalPotData = new PotNewData( pot.create(), structData.Data ) ;
         }
     }
 }() ;
 
 new class PotEdit extends Pagelist {
     show_content() {
-        if ( globalPot.isSelected() ) {
+        if ( pot.isSelected() ) {
             globalDatabase.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Data ))
              .catch( (err) => {
@@ -949,7 +949,7 @@ new class PotEdit extends Pagelist {
 
 new class PotPix extends Pagelist {
     show_content() {
-        if ( globalPot.isSelected() ) {
+        if ( pot.isSelected() ) {
             globalDatabase.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
@@ -965,7 +965,7 @@ new class PotPix extends Pagelist {
 
 new class PotPixEdit extends Pagelist {
     show_content(img_name) {
-        if ( globalPot.isSelected() ) {
+        if ( pot.isSelected() ) {
             globalDatabase.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotDataEditMode( doc, structData.Images, img_name ))
             .catch( (err) => {
@@ -983,7 +983,7 @@ new class PotPixLoading extends Pagelist {
     show_content() {
         document.querySelector(".ContentTitleHidden").style.display = "block";
         globalPage.forget() ;
-        if ( globalPot.isSelected() ) {
+        if ( pot.isSelected() ) {
             globalDatabase.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
@@ -998,9 +998,9 @@ new class PotPixLoading extends Pagelist {
 
 new class PotMenu extends Pagelist {
     show_content() {
-        if ( globalPot.isSelected() ) {
+        if ( pot.isSelected() ) {
             globalDatabase.db.get( globalThis.potId )
-            .then( (doc) => globalPot.showPictures(doc) ) // pictures at bottom
+            .then( (doc) => pot.showPictures(doc) ) // pictures at bottom
             .catch( (err) => {
                 globalLog.err(err);
                 globalPage.show( "back" );
@@ -1014,7 +1014,7 @@ new class PotMenu extends Pagelist {
 
 new class SearchList extends Pagelist {
     show_content() {
-        globalPot.unselect() ;
+        pot.unselect() ;
         new StatBox() ;
         globalTable = new SearchTable() ;
         globalSearch.setTable();
@@ -1709,7 +1709,7 @@ class Pot { // convenience class
                   
 
     newPhoto() {
-        if ( ! globalPot.isSelected() ) { 
+        if ( ! pot.isSelected() ) { 
             globalPage.show("AssignPic") ;
             return ;
         }
@@ -1748,7 +1748,7 @@ class Pot { // convenience class
             return ;
         }
         globalPage.show("PotPixLoading");
-        globalPot.select( pid ) ;
+        pot.select( pid ) ;
         this.save_pic( pid, i_list )
         .then( _ => globalThumbs.getOne( pid ) )
         .then( _ => globalPage.add("PotMenu" ) )
@@ -1818,7 +1818,7 @@ class Id_pot {
     }
 }
 
-globalPot = new Pot() ;
+export const pot = new Pot() ;
 
 class Thumb {
     constructor() {
@@ -1833,7 +1833,7 @@ class Thumb {
 
     click(e) {
         if ( e.target.nodeName == "IMG" ) {
-            globalPot.select( e.target.title ) ;
+            pot.select( e.target.title ) ;
             globalPage.show("PotMenu") ;
         }
     }
@@ -1881,7 +1881,7 @@ class Thumb {
     }
 
     getAll() {
-        globalPot.getAllIdDoc()
+        pot.getAllIdDoc()
         .then( docs => {
             if ( 'requestIdleCallback' in window ) {
                 if ( docs.rows.length > 0 ) {
@@ -2046,7 +2046,7 @@ class SortTable {
         if (e.target.tagName == 'TH') {
             return this.sortClick(e);
         } else if (e.target.closest("tr")) {
-            globalPot.select( e.target.closest("tr").title) ;
+            pot.select( e.target.closest("tr").title) ;
             globalPage.show("PotMenu");
         }
     }
@@ -2249,7 +2249,7 @@ class MultiTable {
     // apply the function on all records to get categorized records
     apply_cat( cat_func ) {
         const a2a = [] ;
-        return globalPot.getAllIdDoc()
+        return pot.getAllIdDoc()
         .then( docs => docs.rows
             .forEach( r => (cat_func( r.doc )??['unknown'])
                 .forEach( c => a2a.push( [c,r] ))
@@ -2335,7 +2335,7 @@ class SearchTable extends ThumbTable {
             return this.sortClick(e);
         } else if (e.target.closest("tr")) {
             const [id,page] = e.target.closest("tr").title.split(" # ") ;
-            globalPot.select( id ) ;
+            pot.select( id ) ;
             globalPage.add( "PotMenu" );
             globalPage.show( page );
         }

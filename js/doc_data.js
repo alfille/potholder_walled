@@ -20,6 +20,7 @@ export {
 
 import {
     PotImages,
+    pot,
 } from "./app.js" ;
     
 // data entry page type
@@ -160,7 +161,7 @@ class PotNewData extends PotDataEditMode {
         this.loadDocData();
         globalDatabase.db.put( this.doc )
         .then( (response) => {
-            globalPot.select(response.id) ;
+            pot.select(response.id) ;
             globalPage.show( "PotMenu" ) ;
             })
         .then( () => globalThumbs.getOne( this.doc._id ) )
