@@ -843,7 +843,7 @@ class Pagelist {
     }
 }
 
-new class Help extends Pagelist {
+export const help = new class Help extends Pagelist {
     show_content() {
         window.open( new URL(`https://alfille.github.io/potholder`,location.href).toString(), '_blank' );
         page.show("back");
