@@ -725,6 +725,10 @@ export class CSV { // convenience class
         this.columns = [
             "type", "series", "location", "start_date", "artist", "firing", "weight_start","weight_end", "construction", "clay.type", "glaze.type", "kiln"
             ] ;
+            
+    }
+    
+    run() {
         this.make_table() ;
     }
     
