@@ -794,7 +794,7 @@ export class CSV { // convenience class
     }
 }
 export const csv = new CSV() ;
-//globalThis.csv = () => new CSV() ;
+globalThis.csv = csv ; // to access in index.html
 
 class Log{
     // Logs errors and shows error page
