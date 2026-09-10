@@ -839,7 +839,7 @@ export class Log{
     }
 }
 export const log = new Log() ;
-globalthis.log = log ;
+globalThis.log = log ;
 
 class Pagelist {
     // list of subclasses = displayed "pages"
