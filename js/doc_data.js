@@ -23,6 +23,7 @@ import {
     pot,
     database,
     log,
+    page,
 } from "./app.js" ;
     
 // data entry page type
@@ -78,9 +79,9 @@ class PotDataRaw { // singleton class
             .then( D => D.remove( deleted_images) )
             .then( _ => globalThumbs.getOne( this.doc._id ) )
             .catch( (err) => log.err(err) )
-            .finally( () => globalPage.show( state ) );
+            .finally( () => page.show( state ) );
         } else {
-            globalPage.show( state ) ;
+            page.show( state ) ;
         }
     }
     
@@ -92,12 +93,12 @@ class PotDataRaw { // singleton class
     back() {
         if ( this.list.changed() ) {
             if ( confirm("WARNING: Unsaved changes.\nPress OK to discard your new data.\nPress CANCEL to NOT DISCARD yet.") ) {
-                globalPage.show("back");
+                page.show("back");
             } else {
                 document.querySelectorAll(".savedata").forEach(s=>s.disabled = false);
             }
         } else {
-            globalPage.show("back");
+            page.show("back");
         }
     }    
 
@@ -164,7 +165,7 @@ class PotNewData extends PotDataEditMode {
         database.db.put( this.doc )
         .then( (response) => {
             pot.select(response.id) ;
-            globalPage.show( "PotMenu" ) ;
+            page.show( "PotMenu" ) ;
             })
         .then( () => globalThumbs.getOne( this.doc._id ) )
         .catch( (err) => log.err(err) )
@@ -188,7 +189,7 @@ class DatabaseData extends PotDataRaw {
             ["username","database","local"].forEach( x => database[x] = this.doc[x] ) ;
             database.store() ;
         }
-        globalPage.reset();
+        page.reset();
         location.reload(); // force reload
     }
 }
@@ -200,12 +201,12 @@ class SettingsData extends PotData {
         globalStorage.set( "settings", globalSettings ) ;
         if (globalSettings.fullscreen=="always") {
             document.documentElement.requestFullscreen()
-            .finally( _ => globalPage.show("back") ) ;
+            .finally( _ => page.show("back") ) ;
         } else {
             if ( document.fullscreenElement ) {
                 document.exitFullscreen() ;
             }
-            globalPage.show("back") ;
+            page.show("back") ;
         }
     }
 }
@@ -245,7 +246,7 @@ class PotDataPrint { // singleton class
         this.list.load_from_doc( this.doc ) ;
 
         this.list.print_doc() ;
-        globalPage.show_print();
+        page.show_print();
         setTimeout( this.print, 1000 ) ;
     }
 

@@ -222,7 +222,6 @@ globalThis.structSettings = [
 // singleton class instances
 //globalThis. globalAddress  = null ;
 globalThis. globalCropper  = null ;
-globalThis. globalPage     = null ;
 globalThis. globalPotData  = null ;
 globalThis. globalSearch   = null;
 globalThis. globalSettings = {} ;
@@ -279,11 +278,11 @@ export class Pot { // convenience class
             })
             .then( _ => globalThumbs.remove( this.id ) )
             .then( _ => this.unselect() )
-            .then( _ => globalPage.show( "back" ) )
+            .then( _ => page.show( "back" ) )
             .catch( (err) => {
                 if (err != "Cancel" ) {
                     log.err(err);
-                    globalPage.show( "back" ) ;
+                    page.show( "back" ) ;
                 }
             });
         }
@@ -311,7 +310,7 @@ export class Pot { // convenience class
 
     unselect() {
         this.id = null;
-//        if ( globalPage.isThis("AllPieces") ) {
+//        if ( page.isThis("AllPieces") ) {
 //            const pt = document.getElementById("PotTable");
 //        }
         new BlankBox();
@@ -358,7 +357,7 @@ export class Pot { // convenience class
 
     newPhoto() {
         if ( ! pot.isSelected() ) { 
-            globalPage.show("AssignPic") ;
+            page.show("AssignPic") ;
             return ;
         }
         const i_list = [...this.pictureSource.files] ;
@@ -367,12 +366,12 @@ export class Pot { // convenience class
         }
         
         const pid = this.id
-        globalPage.show("PotPixLoading");
+        page.show("PotPixLoading");
 
         this.save_pic( pid, i_list )
         .then( () => globalThumbs.getOne( pid ) )
-        .then( () => globalPage.add( "PotMenu" ) )
-        .then( () => globalPage.show("PotPix") )
+        .then( () => page.add( "PotMenu" ) )
+        .then( () => page.show("PotPix") )
         .catch( (err) => {
             log.err(err);
             })
@@ -386,7 +385,7 @@ export class Pot { // convenience class
         .then( response => this.AssignPhoto( response.id ) )
         .catch( err => {
             log.err(err);
-            globalPage.show('MainMenu');
+            page.show('MainMenu');
         }) ;
     }
             
@@ -395,12 +394,12 @@ export class Pot { // convenience class
         if (i_list.length==0 ) {
             return ;
         }
-        globalPage.show("PotPixLoading");
+        page.show("PotPixLoading");
         pot.select( pid ) ;
         this.save_pic( pid, i_list )
         .then( _ => globalThumbs.getOne( pid ) )
-        .then( _ => globalPage.add("PotMenu" ) )
-        .then( _ => globalPage.show("PotPix") )
+        .then( _ => page.add("PotMenu" ) )
+        .then( _ => page.show("PotPix") )
         .catch( (err) => {
             log.err(err);
             })
@@ -679,7 +678,7 @@ export class DatabaseManager { // convenience class
             database.db.destroy()
             .finally( _ => location.reload() ); // force reload
         } else {
-            globalPage.show( "MainMenu" );
+            page.show( "MainMenu" );
         }
     }
 
@@ -773,7 +772,7 @@ export class Log{
     
     err( err, title=null ) {
         // generic console.log of error
-        const ttl = title ?? globalPage.current() ;
+        const ttl = title ?? page.current() ;
         const msg = err.message ?? err ;
         this.list.push(`${ttl}: ${msg}`);
         if ( globalSettings?.console == "true" ) {
@@ -782,7 +781,7 @@ export class Log{
             console.trace();
             console.groupEnd();
         }
-        if ( globalPage.current() == "ErrorLog" ) {
+        if ( page.current() == "ErrorLog" ) {
             // update
             this.show();
         }
@@ -847,7 +846,7 @@ class Pagelist {
 new class Help extends Pagelist {
     show_content() {
         window.open( new URL(`https://alfille.github.io/potholder`,location.href).toString(), '_blank' );
-        globalPage.show("back");
+        page.show("back");
     }
 }() ;
 
@@ -946,10 +945,10 @@ new class PotPrint extends Pagelist {
             .then( (doc) => globalPotData = new PotDataPrint( doc, structData.Data.concat(structData.Images) ) )
             .catch( (err) => {
                 log.err(err);
-                globalPage.show( "back" );
+                page.show( "back" );
                 });
         } else {
-            globalPage.show( "back" );
+            page.show( "back" );
         }
     }
 }() ;
@@ -980,7 +979,7 @@ new class Orphans extends Pagelist {
 
 new class AssignPic extends Pagelist {
     show_content() {
-        globalPage.forget(); // don't return here
+        page.forget(); // don't return here
         // Title adjusted to source and number
         if ( pot.pictureSource.files.length == 0 ) {
             // No pictures taken/chosen
@@ -1070,7 +1069,7 @@ class ListGroup extends Pagelist {
             }
             globalThumbs.show() ;
         } else {
-            globalPage.show("ListMenu");
+            page.show("ListMenu");
         }
     }
 }
@@ -1111,7 +1110,7 @@ new class ListMenu extends Pagelist {
 new class PotNew extends Pagelist {
     // record doesn't exist -- make one
     show_content() {
-        globalPage.forget();
+        page.forget();
         new TextBox("New Piece");
         if ( pot.isSelected() ) {
             // existing but "new"
@@ -1131,11 +1130,11 @@ new class PotEdit extends Pagelist {
             .then( (doc) => globalPotData = new PotData( doc, structData.Data ))
              .catch( (err) => {
                 log.err(err);
-                globalPage.show( "back" );
+                page.show( "back" );
                 });
 
         } else {
-            globalPage.show( "back" );
+            page.show( "back" );
         }
     }
 }() ;
@@ -1147,11 +1146,11 @@ new class PotPix extends Pagelist {
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
                 log.err(err);
-                globalPage.show( "back" );
+                page.show( "back" );
                 });
 
         } else {
-            globalPage.show( "back" );
+            page.show( "back" );
         }
     }
 }() ;
@@ -1163,11 +1162,11 @@ new class PotPixEdit extends Pagelist {
             .then( (doc) => globalPotData = new PotDataEditMode( doc, structData.Images, img_name ))
             .catch( (err) => {
                 log.err(err);
-                globalPage.show( "back" );
+                page.show( "back" );
                 });
 
         } else {
-            globalPage.show( "back" );
+            page.show( "back" );
         }
     }
 }() ;
@@ -1175,16 +1174,16 @@ new class PotPixEdit extends Pagelist {
 new class PotPixLoading extends Pagelist {
     show_content() {
         document.querySelector(".ContentTitleHidden").style.display = "block";
-        globalPage.forget() ;
+        page.forget() ;
         if ( pot.isSelected() ) {
             database.db.get( pot.id )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
                 log.err(err);
-                globalPage.show( "back" );
+                page.show( "back" );
                 });
         } else {
-            globalPage.show( "back" );
+            page.show( "back" );
         }
     }
 }() ;
@@ -1196,11 +1195,11 @@ new class PotMenu extends Pagelist {
             .then( (doc) => pot.showPictures(doc) ) // pictures at bottom
             .catch( (err) => {
                 log.err(err);
-                globalPage.show( "back" );
+                page.show( "back" );
                 })
                 ;
         } else {
-            globalPage.show( "back" );
+            page.show( "back" );
         }
     }
 }() ;
@@ -1215,7 +1214,7 @@ new class SearchList extends Pagelist {
     }
 }() ;
 
-class Page { // singleton class
+export class Page { // singleton class
     constructor() {
         this.normal_screen = false ; // splash/screen/print for show_screen
         this.path = [];
@@ -1301,7 +1300,7 @@ class Page { // singleton class
     }
     
     show_normal() { // switch between screen and print
-        switch ( globalPage.current() ) {
+        switch ( page.current() ) {
             case "PotEdit":
             case "PotPix":
             case "PotPixEdit":
@@ -1340,20 +1339,21 @@ class Page { // singleton class
     }    
 
     headerLink() {
-        switch ( globalPage.current() ) {
+        switch ( page.current() ) {
             case "PotEdit":
             case "PotPix":
             case "PotPixEdit":
-                globalPage.show( "PotMenu" ) ;
+                page.show( "PotMenu" ) ;
                 break ;
             default:
-                globalPage.show("MainMenu") ;
+                page.show("MainMenu") ;
                 break ;
         }
     }    
 }
 
-globalPage = new Page();
+export const page = new Page();
+globalThis.page = page ;
 
 export class Address {
     test_and_store() {
@@ -1492,8 +1492,8 @@ window.onload = () => {
                 globalThumbs.getOne( change.id ) ;
             }
             // update screen display
-            if ( globalPage.isThis("AllPieces") ) {
-                globalPage.show("AllPieces");
+            if ( page.isThis("AllPieces") ) {
+                page.show("AllPieces");
             }
             })
         .catch( err => log.err(err,"Initial search database") );
@@ -1506,7 +1506,7 @@ window.onload = () => {
         ((globalSettings.fullscreen=="always") ?
             document.documentElement.requestFullscreen()
             : Promise.resolve())
-        .finally( _ => globalPage.show("MainMenu") ) ;
+        .finally( _ => page.show("MainMenu") ) ;
         
     } else {
         // bad database usl
@@ -1740,7 +1740,7 @@ class PotImages {
                                 }
                             }
                             document.getElementById('modal_id').style.display='none';
-                            globalPage.show( "PotPixEdit", img_name ) ;
+                            page.show( "PotPixEdit", img_name ) ;
                             };
                     } else {
                         edit.style.visibility = "hidden";
@@ -1807,7 +1807,7 @@ class Thumb {
     click(e) {
         if ( e.target.nodeName == "IMG" ) {
             pot.select( e.target.title ) ;
-            globalPage.show("PotMenu") ;
+            page.show("PotMenu") ;
         }
     }
 
@@ -2020,7 +2020,7 @@ class SortTable {
             return this.sortClick(e);
         } else if (e.target.closest("tr")) {
             pot.select( e.target.closest("tr").title) ;
-            globalPage.show("PotMenu");
+            page.show("PotMenu");
         }
     }
 
@@ -2309,8 +2309,8 @@ class SearchTable extends ThumbTable {
         } else if (e.target.closest("tr")) {
             const [id,page] = e.target.closest("tr").title.split(" # ") ;
             pot.select( id ) ;
-            globalPage.add( "PotMenu" );
-            globalPage.show( page );
+            page.add( "PotMenu" );
+            page.show( page );
         }
     }
 }
