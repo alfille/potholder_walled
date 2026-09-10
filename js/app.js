@@ -479,19 +479,11 @@ export class DatabaseManager { // convenience class
         this.database = null ;
         this.local    = null ;
         
-        this.remoteDB = null;
-        this.problem = false ; // separates real connection problem from just network offline
+        this._remoteDB = null;
+        this._problem = false ; // separates real connection problem from just network offline
         this.synctext = document.getElementById("syncstatus");
         this.db = null ;
         
-    }
-    
-    load() {
-        ["username","database","local"].forEach( x => this[x]=globalStorage.local_get(x) );
-    }
-    
-    store() {
-        ["username","database","local"].forEach( x => globalStorage.local_set(x,this[x]) );
     }
     
     acquire_and_listen() {    
@@ -540,6 +532,7 @@ export class DatabaseManager { // convenience class
                         return api_res.json() ;
                         })
                     .then( user => {
+                        console.log("User",user);
                         this.username = user.name ; 
                         })
                 }
@@ -565,8 +558,7 @@ export class DatabaseManager { // convenience class
             return { status: 'network-error', error: err };
             });    
     }
-    
-    
+        
     present() {
         this.status( "good", "--network present--" ) ;
     }
@@ -578,7 +570,6 @@ export class DatabaseManager { // convenience class
     reset_page() {
         //console.log("RESET PAGE -- won't for testing: ",globalAddress.get_auth().href);
         // trigger a call to authelia sig-in and then restart this app -- will need to save some state
-//        window.location.href = globalAddress.get_auth().href ;
         window.location.href = address.get_auth().href ;
     }
 
@@ -604,8 +595,8 @@ export class DatabaseManager { // convenience class
             }
             
             console.log("remote setup");
-//            this.remoteDB = new PouchDB( globalAddress.database_url.href, {
-            this.remoteDB = new PouchDB( address.database_url.href, {
+//            this._remoteDB = new PouchDB( globalAddress.database_url.href, {
+            this._remoteDB = new PouchDB( address.database_url.href, {
                 "skip_setup": "true",
                 fetch: (url, opts) => {
                     opts.credentials = 'include';
@@ -622,9 +613,9 @@ export class DatabaseManager { // convenience class
                     });
                 }
             });            
-            if ( this.remoteDB ) {
+            if ( this._remoteDB ) {
                 this.status( "good","download remote database");
-                this.db.replicate.from( this.remoteDB )
+                this.db.replicate.from( this._remoteDB )
                     .catch( (err) => this.status("problem",`Replication from remote error ${err.message}`) )
                     .finally( _ => this.syncer() );
             } else {
@@ -635,7 +626,7 @@ export class DatabaseManager { // convenience class
     
     syncer() {
         this.status("good","Starting database intermittent sync");
-        database.db.sync( this.remoteDB ,
+        database.db.sync( this._remoteDB ,
             {
                 live: true,
                 retry: true,
@@ -660,7 +651,7 @@ export class DatabaseManager { // convenience class
             case "problem":
                 document.body.style.background="#d72e18"; // grey
                 log.err(msg,"Network status");
-                this.problem = true ;
+                this._problem = true ;
                 break ;
             case "good":
             default:
@@ -668,33 +659,12 @@ export class DatabaseManager { // convenience class
                 if ( this.lastState !== state ) {
                     log.err(msg,"Network status");
                 }
-                this.problem = false ;
+                this._problem = false ;
                 break ;
         }
         this.synctext.value = msg ;
     }
             
-    SecureURLparse( url ) {
-        let prot = "https";
-        let addr = url;
-        let port = "6984";
-        let spl = url.split("://") ;
-        if (spl.length < 2 ) {
-            addr=spl[0];
-        } else {
-            prot = spl[0];
-            addr = spl[1];
-        }
-        spl = addr.split(":");
-        if (spl.length < 2 ) {
-            addr=spl[0];
-        } else {
-            addr = spl[0];
-            port = spl[1];
-        }
-        return [prot,[addr,port].join(":")].join("://");
-    }
-
     // Fauxton link
     fauxton() {
 //        window.open( `${globalAddress.get_fauxton()}`, '_blank' );
@@ -716,6 +686,7 @@ export class DatabaseManager { // convenience class
 }
 
 export const database = new DatabaseManager() ;
+globalThis.database = database ; // for clearLocal in index.html
 
 export class CSV { // convenience class
     constructor() {
