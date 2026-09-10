@@ -219,9 +219,6 @@ globalThis.structSettings = [
     }
 ] ;
 
-// globals storage backed
-globalThis. potId = null ;
-
 // singleton class instances
 //globalThis. globalAddress  = null ;
 globalThis. globalCropper  = null ;
@@ -251,6 +248,7 @@ globalThis. cloneClass = ( fromClass, target ) => {
 
 export class Pot { // convenience class
     constructor() {
+        this.id = null ;
         this.pictureSource = document.getElementById("HiddenPix");
     }
     
@@ -270,7 +268,7 @@ export class Pot { // convenience class
    
     del() {
         if ( this.isSelected() ) {        
-            database.db.get( globalThis.potId )
+            database.db.get( this.id )
             .then( (doc) => {
                 // Confirm question
                 if (confirm(`WARNING -- about to delete this piece\n piece type << ${doc?.type} >> of series << ${doc.series} >>\nPress CANCEL to back out`)==true) {
@@ -279,7 +277,7 @@ export class Pot { // convenience class
                     throw "Cancel";
                 }           
             })
-            .then( _ => globalThumbs.remove( globalThis.potId ) )
+            .then( _ => globalThumbs.remove( this.id ) )
             .then( _ => this.unselect() )
             .then( _ => globalPage.show( "back" ) )
             .catch( (err) => {
@@ -301,18 +299,18 @@ export class Pot { // convenience class
         return database.db.allDocs(doc);
     }
         
-    select( pid = globalThis.potId ) {
-        globalThis.potId = pid ;
+    select( pid ) {
+        this.id = pid ;
         // Check pot existence
         new TextBox("Piece Selected");
     }
 
     isSelected() {
-        return ( globalThis.potId != null ) ;
+        return ( this.id != null ) ;
     }
 
     unselect() {
-        globalThis.potId = null;
+        this.id = null;
 //        if ( globalPage.isThis("AllPieces") ) {
 //            const pt = document.getElementById("PotTable");
 //        }
@@ -329,7 +327,7 @@ export class Pot { // convenience class
         this.pictureSource.click() ;
     }
 
-    save_pic( pid=globalThis.potId, i_list=[] ) {
+    save_pic( pid=this.id, i_list=[] ) {
         if ( i_list.length == 0 ) {
             return Promise.resolve(true) ;
         }
@@ -368,7 +366,7 @@ export class Pot { // convenience class
             return ;
         }
         
-        const pid = globalThis.potId
+        const pid = this.id
         globalPage.show("PotPixLoading");
 
         this.save_pic( pid, i_list )
@@ -392,7 +390,7 @@ export class Pot { // convenience class
         }) ;
     }
             
-    AssignPhoto(pid = globalThis.potId) {
+    AssignPhoto(pid = this.id) {
         const i_list = [...this.pictureSource.files] ;
         if (i_list.length==0 ) {
             return ;
@@ -427,7 +425,7 @@ class Id_pot {
     static start="";
     static end="\uffff";
     
-    static splitId( id=globalThis.potId ) {
+    static splitId( id=pot.id ) {
         if ( id ) {
             const spl = id.split(";");
             return {
@@ -973,7 +971,7 @@ new class MakeQR extends Pagelist {
 new class PotPrint extends Pagelist {
     show_content() {
         if ( pot.isSelected() ) {
-            database.db.get( globalThis.potId )
+            database.db.get( pot.id )
             .then( (doc) => globalPotData = new PotDataPrint( doc, structData.Data.concat(structData.Images) ) )
             .catch( (err) => {
                 log.err(err);
@@ -1146,7 +1144,7 @@ new class PotNew extends Pagelist {
         new TextBox("New Piece");
         if ( pot.isSelected() ) {
             // existing but "new"
-            database.db.get( globalThis.potId )
+            database.db.get( pot.id )
             .then( doc => globalPotData = new PotNewData( doc, structData.Data ) )
             .catch( err => log.err(err) ) ;
         } else {
@@ -1158,7 +1156,7 @@ new class PotNew extends Pagelist {
 new class PotEdit extends Pagelist {
     show_content() {
         if ( pot.isSelected() ) {
-            database.db.get( globalThis.potId )
+            database.db.get( pot.id )
             .then( (doc) => globalPotData = new PotData( doc, structData.Data ))
              .catch( (err) => {
                 log.err(err);
@@ -1174,7 +1172,7 @@ new class PotEdit extends Pagelist {
 new class PotPix extends Pagelist {
     show_content() {
         if ( pot.isSelected() ) {
-            database.db.get( globalThis.potId )
+            database.db.get( pot.id )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
                 log.err(err);
@@ -1190,7 +1188,7 @@ new class PotPix extends Pagelist {
 new class PotPixEdit extends Pagelist {
     show_content(img_name) {
         if ( pot.isSelected() ) {
-            database.db.get( globalThis.potId )
+            database.db.get( pot.id )
             .then( (doc) => globalPotData = new PotDataEditMode( doc, structData.Images, img_name ))
             .catch( (err) => {
                 log.err(err);
@@ -1208,7 +1206,7 @@ new class PotPixLoading extends Pagelist {
         document.querySelector(".ContentTitleHidden").style.display = "block";
         globalPage.forget() ;
         if ( pot.isSelected() ) {
-            database.db.get( globalThis.potId )
+            database.db.get( pot.id )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
                 log.err(err);
@@ -1223,7 +1221,7 @@ new class PotPixLoading extends Pagelist {
 new class PotMenu extends Pagelist {
     show_content() {
         if ( pot.isSelected() ) {
-            database.db.get( globalThis.potId )
+            database.db.get( pot.id )
             .then( (doc) => pot.showPictures(doc) ) // pictures at bottom
             .catch( (err) => {
                 log.err(err);
@@ -1336,8 +1334,8 @@ class Page { // singleton class
             case "PotEdit":
             case "PotPix":
             case "PotPixEdit":
-                this.TLlast = globalThis.potId ;
-                this.TL.src = globalThumbs.displayThumb( globalThis.potId ) ;
+                this.TLlast = pot.id;
+                this.TL.src = globalThumbs.displayThumb( pot.id ) ;
                 break ;
             default:
                 if ( this.TLlast != null ) {
@@ -1877,7 +1875,7 @@ class Thumb {
         .catch( err => log.err(err) );
     }
 
-    getOne( pid = globalThis.potId ) {
+    getOne( pid = pot.id ) {
         return database.db.get( pid )
         .then( doc => this._create(doc) )
         .then( _ => this.replot() )
@@ -1909,7 +1907,7 @@ class Thumb {
         }
     }
 
-    displayThumb( pid = globalThis.potId ) {
+    displayThumb( pid = pot.id ) {
         const img = new Image(100,100);
         img.classList.add("ThumbPhoto");
         img.title = pid;
