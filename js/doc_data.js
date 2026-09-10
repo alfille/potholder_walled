@@ -22,6 +22,7 @@ import {
     PotImages,
     pot,
     database,
+    log,
 } from "./app.js" ;
     
 // data entry page type
@@ -76,7 +77,7 @@ class PotDataRaw { // singleton class
             .then( r => new Detachment( r.id, r.rev ) )
             .then( D => D.remove( deleted_images) )
             .then( _ => globalThumbs.getOne( this.doc._id ) )
-            .catch( (err) => globalLog.err(err) )
+            .catch( (err) => log.err(err) )
             .finally( () => globalPage.show( state ) );
         } else {
             globalPage.show( state ) ;
@@ -166,7 +167,7 @@ class PotNewData extends PotDataEditMode {
             globalPage.show( "PotMenu" ) ;
             })
         .then( () => globalThumbs.getOne( this.doc._id ) )
-        .catch( (err) => globalLog.err(err) )
+        .catch( (err) => log.err(err) )
         ;
     }
 }
@@ -223,7 +224,7 @@ class Detachment {
                     this.rev = r.rev ;
                     return this.remove( i_list ) ;
                     })
-                .catch( err => globalLog.err("Database") );
+                .catch( err => log.err("Database") );
         } else {
             return Promise.resolve(true) ;
         }
@@ -463,12 +464,12 @@ class InvisibleEntry {
     }
     
     load_from_doc( doc ) {
-		console.log("Load",this._name,doc);
+        console.log("Load",this._name,doc);
         this.initial_val = (this._name in doc) ? doc[this._name] : this.default_value() ;
         const d = `default_${this._name}`
         if ( d in doc ) {
-			this.default_given = doc[d] ;
-		}
+            this.default_given = doc[d] ;
+        }
         this.new_val = this.initial_val ;
     }
     
@@ -544,16 +545,16 @@ class VisibleEntry extends InvisibleEntry {
         // wraps the label and calls for HTML elements
         let def = [] ;
         if ( "default" in this.struct ) {
-			if ( this.default_given ) {
-				def = document.createElement( "button" );
-				def.title = `Use automatic value: ${this.default_given}` ;
-				def.appendChild( document.createTextNode("Use default") );
-				def.onclick=()=>{
-					this.field.value=this.default_given; 
-					this.save_enable() ;
-					};
-			}
-		}
+            if ( this.default_given ) {
+                def = document.createElement( "button" );
+                def.title = `Use automatic value: ${this.default_given}` ;
+                def.appendChild( document.createTextNode("Use default") );
+                def.onclick=()=>{
+                    this.field.value=this.default_given; 
+                    this.save_enable() ;
+                    };
+            }
+        }
         return [this.edit_label()].concat( this.edit_flatten().flat(),def ) ;
     }
 
@@ -565,7 +566,7 @@ class VisibleEntry extends InvisibleEntry {
 
 class TextEntry extends VisibleEntry {
     edit_flatten() {
-		console.log("TextEntry",this);
+        console.log("TextEntry",this);
         // get value and make type-specific input field with filled in value
         this.field = document.createElement( "input" );
         this.field.title = this.struct.hint;
@@ -1308,7 +1309,7 @@ class Crop {
             image.src = url ;
             })
         .catch( err => {
-            globalLog.err(err) ;
+            log.err(err) ;
             this.cancel() ;
             }) ;
     }

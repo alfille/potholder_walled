@@ -225,7 +225,6 @@ globalThis. potId = null ;
 // singleton class instances
 //globalThis. globalAddress  = null ;
 globalThis. globalCropper  = null ;
-globalThis. globalLog      = null ;
 globalThis. globalPage     = null ;
 globalThis. globalPotData  = null ;
 globalThis. globalSearch   = null;
@@ -285,7 +284,7 @@ export class Pot { // convenience class
             .then( _ => globalPage.show( "back" ) )
             .catch( (err) => {
                 if (err != "Cancel" ) {
-                    globalLog.err(err);
+                    log.err(err);
                     globalPage.show( "back" ) ;
                 }
             });
@@ -343,7 +342,7 @@ export class Pot { // convenience class
             if ( doc.images.find( e => e.image == f.name ) ) {
                 // exists, just update attachment
                 return database.db.putAttachment( pid, f.name, doc._rev, f, f.type )
-                    .catch( err => globalLog.err(err)) ;
+                    .catch( err => log.err(err)) ;
             } else {
                 // doesn't exist, add images entry as well (to front)
                 doc.images.unshift( {
@@ -377,7 +376,7 @@ export class Pot { // convenience class
         .then( () => globalPage.add( "PotMenu" ) )
         .then( () => globalPage.show("PotPix") )
         .catch( (err) => {
-            globalLog.err(err);
+            log.err(err);
             })
         .finally( () => this.pictureSource.value = "" ) ;
     }
@@ -388,7 +387,7 @@ export class Pot { // convenience class
         database.db.put( doc )
         .then( response => this.AssignPhoto( response.id ) )
         .catch( err => {
-            globalLog.err(err);
+            log.err(err);
             globalPage.show('MainMenu');
         }) ;
     }
@@ -405,7 +404,7 @@ export class Pot { // convenience class
         .then( _ => globalPage.add("PotMenu" ) )
         .then( _ => globalPage.show("PotPix") )
         .catch( (err) => {
-            globalLog.err(err);
+            log.err(err);
             })
         .finally( () => this.pictureSource.value = "" ) ;
     }
@@ -657,19 +656,19 @@ export class DatabaseManager { // convenience class
             case "disconnect":
                 document.body.style.background="#7071d3"; // Orange
                 if ( this.lastState !== state ) {
-                    globalLog.err(msg,"Network status");
+                    log.err(msg,"Network status");
                 }
                 break ;
             case "problem":
                 document.body.style.background="#d72e18"; // grey
-                globalLog.err(msg,"Network status");
+                log.err(msg,"Network status");
                 this.problem = true ;
                 break ;
             case "good":
             default:
                 document.body.style.background="#172bae"; // heppy blue
                 if ( this.lastState !== state ) {
-                    globalLog.err(msg,"Network status");
+                    log.err(msg,"Network status");
                 }
                 this.problem = false ;
                 break ;
@@ -790,13 +789,13 @@ export class CSV { // convenience class
         .then( data => data.join("\n") )
         .then( data => [this.make_headings(), data].join("\n") )
         .then( csv => this.download( csv ) )
-        .catch( err => globalLog.err(err) ) ;
+        .catch( err => log.err(err) ) ;
     }
 }
 export const csv = new CSV() ;
 globalThis.csv = csv ; // to access in index.html
 
-class Log{
+export class Log{
     // Logs errors and shows error page
     // unfortunately hides offending line
     constructor() {
@@ -839,7 +838,8 @@ class Log{
         });
     }
 }
-globalLog = new Log() ;
+export const log = new Log() ;
+globalthis.log = log ;
 
 class Pagelist {
     // list of subclasses = displayed "pages"
@@ -899,7 +899,7 @@ new class DatabaseInfo extends Pagelist {
         .then( doc => {
             globalPotData = new PotDataReadonly( doc, structDatabaseInfo );
             })
-        .catch( err => globalLog.err(err) );
+        .catch( err => log.err(err) );
         globalThumbs.show() ;
     }
 
@@ -965,7 +965,7 @@ new class MakeQR extends Pagelist {
         document.getElementById("CopyURLtext").onclick = () => {
 //            navigator.clipboard.writeText( globalAddress.bare_url.toString() )
             navigator.clipboard.writeText( address.bare_url.toString() )
-            .catch( err => globalLog.err(err) );
+            .catch( err => log.err(err) );
             } ;
     }
 }() ;
@@ -976,7 +976,7 @@ new class PotPrint extends Pagelist {
             database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotDataPrint( doc, structData.Data.concat(structData.Images) ) )
             .catch( (err) => {
-                globalLog.err(err);
+                log.err(err);
                 globalPage.show( "back" );
                 });
         } else {
@@ -992,7 +992,7 @@ new class AllPieces extends Pagelist {
         globalTable = new PotTable();
         pot.getAllIdDoc()
         .then( (docs) => globalTable.fill(docs.rows ) )
-        .catch( (err) => globalLog.err(err) );
+        .catch( (err) => log.err(err) );
         globalThumbs.show() ;
     }
 }() ;
@@ -1004,7 +1004,7 @@ new class Orphans extends Pagelist {
         globalTable = new OrphanTable();
         pot.getAllIdDoc()
         .then( (docs) => globalTable.fill(docs.rows ) )
-        .catch( (err) => globalLog.err(err) );
+        .catch( (err) => log.err(err) );
         globalThumbs.show() ;
     }
 }() ;
@@ -1029,7 +1029,7 @@ new class AssignPic extends Pagelist {
         globalTable = new AssignTable();
         pot.getAllIdDoc()
         .then( (docs) => globalTable.fill(docs.rows ) )
-        .catch( (err) => globalLog.err(err) );
+        .catch( (err) => log.err(err) );
     }
 }() ;
 
@@ -1118,7 +1118,7 @@ new class ErrorLog extends Pagelist {
     show_content() {
         pot.unselect() ;
         new TextBox("Error Log");
-        globalLog.show() ;
+        log.show() ;
         globalThumbs.show() ;
     }
 }() ;
@@ -1148,7 +1148,7 @@ new class PotNew extends Pagelist {
             // existing but "new"
             database.db.get( globalThis.potId )
             .then( doc => globalPotData = new PotNewData( doc, structData.Data ) )
-            .catch( err => globalLog.err(err) ) ;
+            .catch( err => log.err(err) ) ;
         } else {
             globalPotData = new PotNewData( pot.create(), structData.Data ) ;
         }
@@ -1161,7 +1161,7 @@ new class PotEdit extends Pagelist {
             database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Data ))
              .catch( (err) => {
-                globalLog.err(err);
+                log.err(err);
                 globalPage.show( "back" );
                 });
 
@@ -1177,7 +1177,7 @@ new class PotPix extends Pagelist {
             database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
-                globalLog.err(err);
+                log.err(err);
                 globalPage.show( "back" );
                 });
 
@@ -1193,7 +1193,7 @@ new class PotPixEdit extends Pagelist {
             database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotDataEditMode( doc, structData.Images, img_name ))
             .catch( (err) => {
-                globalLog.err(err);
+                log.err(err);
                 globalPage.show( "back" );
                 });
 
@@ -1211,7 +1211,7 @@ new class PotPixLoading extends Pagelist {
             database.db.get( globalThis.potId )
             .then( (doc) => globalPotData = new PotData( doc, structData.Images ))
             .catch( (err) => {
-                globalLog.err(err);
+                log.err(err);
                 globalPage.show( "back" );
                 });
         } else {
@@ -1226,7 +1226,7 @@ new class PotMenu extends Pagelist {
             database.db.get( globalThis.potId )
             .then( (doc) => pot.showPictures(doc) ) // pictures at bottom
             .catch( (err) => {
-                globalLog.err(err);
+                log.err(err);
                 globalPage.show( "back" );
                 })
                 ;
@@ -1465,7 +1465,7 @@ window.onload = () => {
     if ( navigator && ('serviceWorker' in navigator) ) {
         navigator.serviceWorker
         .register('/sw.js')
-        .catch( err => globalLog.err(err,"Service worker registration") );
+        .catch( err => log.err(err,"Service worker registration") );
     }
 
     // Settings
@@ -1507,7 +1507,7 @@ window.onload = () => {
         const q = new Query();
         q.create( structData.Data.concat(structData.Images) )
         .then( () => globalThumbs.getAll() ) // create thumbs
-        .catch( err => globalLog.err(err,"Query cleanup") )
+        .catch( err => log.err(err,"Query cleanup") )
         ;
 
         // now start listening for any changes to the database
@@ -1527,7 +1527,7 @@ window.onload = () => {
                 globalPage.show("AllPieces");
             }
             })
-        .catch( err => globalLog.err(err,"Initial search database") );
+        .catch( err => log.err(err,"Initial search database") );
 
         // start sync with remote database
         console.log("Get Remote");
@@ -1622,7 +1622,7 @@ class Query {
             }))
         .then( _ => this.prune_queries() )
         .then( _ => database.db.viewCleanup() )
-        .catch( (err) => globalLog.err(err) );
+        .catch( (err) => log.err(err) );
     }
     
     struct_parse(struct) {
@@ -1785,12 +1785,12 @@ class PotImages {
                         document.getElementById("modal_id").style.display="block";
                         });
                     })
-                .catch( err => globalLog.err(err) ) ;
+                .catch( err => log.err(err) ) ;
             };
 
             img.src=url ;
             })
-        .catch( err => globalLog.err(err)) ;
+        .catch( err => log.err(err)) ;
         return canvas ;
     }
 
@@ -1814,7 +1814,7 @@ class PotImages {
             img.src=url ;
             canvas.classList.add("print_pic");
             })
-        .catch( err => globalLog.err(err)) ;
+        .catch( err => log.err(err)) ;
         return canvas ;
     }
 
@@ -1874,14 +1874,14 @@ class Thumb {
                 };
             t_img.src = url ;
         })
-        .catch( err => globalLog.err(err) );
+        .catch( err => log.err(err) );
     }
 
     getOne( pid = globalThis.potId ) {
         return database.db.get( pid )
         .then( doc => this._create(doc) )
         .then( _ => this.replot() )
-        .catch( err => globalLog.err(err) );
+        .catch( err => log.err(err) );
     }
 
     getAll() {
@@ -1896,7 +1896,7 @@ class Thumb {
                 this.replot() ;
             }
             })
-        .catch( err => globalLog.err(err) ) ;
+        .catch( err => log.err(err) ) ;
     }
 
     getAllList( rows ) {
@@ -2023,7 +2023,7 @@ class SortTable {
                     return transformfunction(record) ;
                 }
             } catch(e) {
-                globalLog.err(e) ;
+                log.err(e) ;
                 return "";
             }
             }) ;
@@ -2404,7 +2404,7 @@ class Search { // singleton class
         .then( res => res.map( r=>({doc:r}))) // encode as list of doc objects
         .then( res=>this.setTable(res)) // fill the table
         .catch(err=> {
-            globalLog.err(err);
+            log.err(err);
             this.resetTable();
             });
     }
