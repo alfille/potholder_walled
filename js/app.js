@@ -420,6 +420,8 @@ export class Pot { // convenience class
     }
 }
 
+export const pot = new Pot() ;
+
 class Id_pot {
     static type = "p";
     static version = 0;
@@ -483,7 +485,7 @@ export class DatabaseManager { // convenience class
         this.remoteDB = null;
         this.problem = false ; // separates real connection problem from just network offline
         this.synctext = document.getElementById("syncstatus");
-        this.db = new PouchDB( "default" ) ;
+        this.db = null ;
         
     }
     
@@ -510,16 +512,8 @@ export class DatabaseManager { // convenience class
     
     open() { // local
         if ( globalThis.database && (globalThis.database !== "") ) {
-            this.db.destroy()
-            .then ( ()=> { 
-                console.log("destroy"); 
-                this.db = new PouchDB( globalThis.database, {auto_compaction: true} ) ; 
-                console.log("created");
-                })
-            .catch( err => {
-                console.log("Bad destroy",err);
-                }); // open local copy
-            console.log("opened ",globalThis.database);
+            // open local copy
+            this.db = new PouchDB( globalThis.database, {auto_compaction: true} ) ; 
         }
     }
 
@@ -725,8 +719,6 @@ export class DatabaseManager { // convenience class
 }
 
 export const database = new DatabaseManager() ;
-
-export const pot = new Pot() ;
 
 export class CSV { // convenience class
     constructor() {
@@ -1536,7 +1528,7 @@ window.onload = () => {
         // start sync with remote database
         console.log("Get Remote");
         database.foreverSync();
-
+        
         // Show screen
         ((globalSettings.fullscreen=="always") ?
             document.documentElement.requestFullscreen()
