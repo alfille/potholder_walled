@@ -1214,11 +1214,11 @@ class ImageArrayEntry extends ArrayEntry {
             } ;    
         b.style.display = "none" ;
         document.body.appendChild(b) ;
-        globalCropper.crop(this.new_val[idx] ) ;
+        crop.crop(this.new_val[idx] ) ;
     }
 }
 
-class Crop {
+export class Crop {
     constructor() {
         // canvas and context
         this.under = document.getElementById("under_canvas") ;
@@ -1692,4 +1692,6 @@ class Crop {
         
 }
 
-globalCropper = new Crop() ;
+export const crop = new Crop() ;
+gobalThis.crop = crop ;
+//crop = new Crop() ;

@@ -20,6 +20,7 @@ import {
     DatabaseData,
     PotNewData,
     PotDataPrint,
+    crop,
 } from "./doc_data.js" ;
 
 const structGeneralPot = [
@@ -221,7 +222,7 @@ globalThis.structSettings = [
 
 // singleton class instances
 //globalThis. globalAddress  = null ;
-globalThis. globalCropper  = null ;
+//globalThis. crop  = null ;
 globalThis. globalPotData  = null ;
 globalThis. globalSettings = {} ;
 globalThis. globalTable    = null ;
@@ -1458,7 +1459,7 @@ window.onload = () => {
                 window.requestAnimationFrame( () => thumbs.replot_needed() ) ;
                 break ;
             case "crop_canvas":
-                globalCropper.cacheBounds() ;
+                crop.cacheBounds() ;
                 break ;
         } ;
     }) ) ; 
