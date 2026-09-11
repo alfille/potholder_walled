@@ -24,6 +24,7 @@ import {
     database,
     log,
     page,
+    thumbs,
 } from "./app.js" ;
     
 // data entry page type
@@ -77,7 +78,7 @@ class PotDataRaw { // singleton class
             database.db.put( this.doc )
             .then( r => new Detachment( r.id, r.rev ) )
             .then( D => D.remove( deleted_images) )
-            .then( _ => globalThumbs.getOne( this.doc._id ) )
+            .then( _ => thumbs.getOne( this.doc._id ) )
             .catch( (err) => log.err(err) )
             .finally( () => page.show( state ) );
         } else {
@@ -167,7 +168,7 @@ class PotNewData extends PotDataEditMode {
             pot.select(response.id) ;
             page.show( "PotMenu" ) ;
             })
-        .then( () => globalThumbs.getOne( this.doc._id ) )
+        .then( () => thumbs.getOne( this.doc._id ) )
         .catch( (err) => log.err(err) )
         ;
     }

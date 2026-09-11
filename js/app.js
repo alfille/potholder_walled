@@ -227,7 +227,6 @@ globalThis. globalSearch   = null;
 globalThis. globalSettings = {} ;
 globalThis. globalStorage  = null ;
 globalThis. globalTable    = null ;
-globalThis. globalThumbs   = null;
 
 globalThis. rightSize = ( imgW, imgH, limitW, limitH ) => {
     const h = limitW * imgH / imgW ;
@@ -276,7 +275,7 @@ export class Pot { // convenience class
                     throw "Cancel";
                 }           
             })
-            .then( _ => globalThumbs.remove( this.id ) )
+            .then( _ => thumbs.remove( this.id ) )
             .then( _ => this.unselect() )
             .then( _ => page.show( "back" ) )
             .catch( (err) => {
@@ -369,7 +368,7 @@ export class Pot { // convenience class
         page.show("PotPixLoading");
 
         this.save_pic( pid, i_list )
-        .then( () => globalThumbs.getOne( pid ) )
+        .then( () => thumbs.getOne( pid ) )
         .then( () => page.add( "PotMenu" ) )
         .then( () => page.show("PotPix") )
         .catch( (err) => {
@@ -397,7 +396,7 @@ export class Pot { // convenience class
         page.show("PotPixLoading");
         pot.select( pid ) ;
         this.save_pic( pid, i_list )
-        .then( _ => globalThumbs.getOne( pid ) )
+        .then( _ => thumbs.getOne( pid ) )
         .then( _ => page.add("PotMenu" ) )
         .then( _ => page.show("PotPix") )
         .catch( (err) => {
@@ -829,7 +828,7 @@ class Pagelist {
             .forEach( po => po.style.display = po.classList.contains(name) ? "block" : "none" );
 
         // hide Thumbnails
-        globalThumbs.hide() ;
+        thumbs.hide() ;
         
         // hide Crop
         document.getElementById("crop_page").style.display="none" ;
@@ -852,7 +851,7 @@ export const help = new class Help extends Pagelist {
 
 class PagelistThumblist extends Pagelist {
     show_content() {
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 }
 new class Advanced extends PagelistThumblist {}() ;
@@ -868,7 +867,7 @@ new class DatabaseInfo extends Pagelist {
             globalPotData = new PotDataReadonly( doc, structDatabaseInfo );
             })
         .catch( err => log.err(err) );
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 
 }() ;
@@ -961,7 +960,7 @@ new class AllPieces extends Pagelist {
         pot.getAllIdDoc()
         .then( (docs) => globalTable.fill(docs.rows ) )
         .catch( (err) => log.err(err) );
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 }() ;
 
@@ -973,7 +972,7 @@ new class Orphans extends Pagelist {
         pot.getAllIdDoc()
         .then( (docs) => globalTable.fill(docs.rows ) )
         .catch( (err) => log.err(err) );
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 }() ;
 
@@ -1015,7 +1014,7 @@ class StructShow extends Pagelist {
         new TextBox("Field Structure") ;
         document.getElementById("StructShowTitle").innerText=this.struct_title ?? "" ;
         document.getElementById("struct_json").innerText = JSON.stringify( this.struct_name, null, 2 ) ;
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 }
 
@@ -1067,7 +1066,7 @@ class ListGroup extends Pagelist {
                         });
                     break ;
             }
-            globalThumbs.show() ;
+            thumbs.show() ;
         } else {
             page.show("ListMenu");
         }
@@ -1087,7 +1086,7 @@ new class ErrorLog extends Pagelist {
         pot.unselect() ;
         new TextBox("Error Log");
         log.show() ;
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 }() ;
 
@@ -1095,7 +1094,7 @@ new class MainMenu extends Pagelist {
     show_content() {
         pot.unselect();
         new StatBox() ;
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 }() ;
 
@@ -1103,7 +1102,7 @@ new class ListMenu extends Pagelist {
     show_content() {
         pot.unselect();
         new StatBox() ;
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 }() ;
 
@@ -1210,7 +1209,7 @@ new class SearchList extends Pagelist {
         new StatBox() ;
         globalTable = new SearchTable() ;
         globalSearch.setTable();
-        globalThumbs.show() ;
+        thumbs.show() ;
     }
 }() ;
 
@@ -1305,7 +1304,7 @@ export class Page { // singleton class
             case "PotPix":
             case "PotPixEdit":
                 this.TLlast = pot.id;
-                this.TL.src = globalThumbs.displayThumb( pot.id ) ;
+                this.TL.src = thumbs.displayThumb( pot.id ) ;
                 break ;
             default:
                 if ( this.TLlast != null ) {
@@ -1458,7 +1457,7 @@ window.onload = () => {
     globalThis.globalResize = new ResizeObserver( entries => entries.forEach( e=> {
         switch (e.target.id) {
             case "Side":
-                window.requestAnimationFrame( () => globalThumbs.replot_needed() ) ;
+                window.requestAnimationFrame( () => thumbs.replot_needed() ) ;
                 break ;
             case "crop_canvas":
                 globalCropper.cacheBounds() ;
@@ -1470,12 +1469,12 @@ window.onload = () => {
     database.open() ;       
     if ( database.db ) {
         // Thumbnails
-        globalThumbs.setup() ; // just getting canvas from doc
+        thumbs.setup() ; // just getting canvas from doc
 
         // Secondary indexes (create, prune and clean up views)
         const q = new Query();
         q.create( structData.Data.concat(structData.Images) )
-        .then( () => globalThumbs.getAll() ) // create thumbs
+        .then( () => thumbs.getAll() ) // create thumbs
         .catch( err => log.err(err,"Query cleanup") )
         ;
 
@@ -1487,9 +1486,9 @@ window.onload = () => {
             })
         .on('change', (change) => {
             if ( change?.deleted ) {
-                globalThumbs.remove( change.id ) ;
+                thumbs.remove( change.id ) ;
             } else {
-                globalThumbs.getOne( change.id ) ;
+                thumbs.getOne( change.id ) ;
             }
             // update screen display
             if ( page.isThis("AllPieces") ) {
@@ -1793,9 +1792,9 @@ class PotImages {
 }
 
 
-class Thumb {
+class Thumbs {
     constructor() {
-        this.Thumbs = {} ;
+        this.thumblist = {} ;
         this.showing = false ;
         this.side = document.getElementById("Side");
         this.side.onclick = (e) => this.click(e) ;
@@ -1839,7 +1838,7 @@ class Thumb {
                 // center and crop to maintain 1:1 aspect ratio
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 this.ctx.drawImage( t_img, crop[0] + (crop[2]-iw)/2, crop[1] + (crop[3]-ih)/2, iw, ih, 0, 0, this.canvas.width, this.canvas.height ) ;
-                this.canvas.toBlob( (blob) => this.Thumbs[pid] = blob );
+                this.canvas.toBlob( (blob) => this.thumblist[pid] = blob );
                 };
             t_img.src = url ;
         })
@@ -1882,8 +1881,8 @@ class Thumb {
         const img = new Image(100,100);
         img.classList.add("ThumbPhoto");
         img.title = pid;
-        if ( pid in this.Thumbs ) {
-            const url = URL.createObjectURL( this.Thumbs[pid] );
+        if ( pid in this.thumblist ) {
+            const url = URL.createObjectURL( this.thumblist[pid] );
             img.onload = () => URL.revokeObjectURL( url );
             img.src = url;
         } else {
@@ -1893,8 +1892,8 @@ class Thumb {
     }
     
     remove( pid ) {
-        if ( pid in this.Thumbs ) {
-            delete this.Thumbs[pid];
+        if ( pid in this.thumblist ) {
+            delete this.thumblist[pid];
             this.replot() ;
         }
     }
@@ -1912,7 +1911,7 @@ class Thumb {
         if (this.nside==0) {
             this.side.style.padding = "0px" ;
             this.bottom.style.padding = "0px" ;
-        } else if ( this.nside >= Object.keys(this.Thumbs).length ) {
+        } else if ( this.nside >= Object.keys(this.thumblist).length ) {
             this.side.style.padding = "0px" ;
             this.bottom.style.padding = "0px" ;
             this.side.style.alignContent="flex-start";
@@ -1922,7 +1921,7 @@ class Thumb {
             this.side.style.alignContent="flex-end";
         }
         this.bottom.onclick = (e) => this.click(e) ;
-        Object.keys(this.Thumbs).forEach( (p,i) => {
+        Object.keys(this.thumblist).forEach( (p,i) => {
             if ( i < this.nside ) {
                 this.side.appendChild(this.displayThumb(p)) ;
             } else {
@@ -1948,7 +1947,7 @@ class Thumb {
     }
 }
 
-globalThumbs = new Thumb() ;
+thumbs = new Thumbs() ;
 
 class SortTable {
     constructor( collist, tableId, aliaslist=[] ) {
@@ -2106,7 +2105,7 @@ class ThumbTable extends SortTable {
             /* Select and edit -- need to make sure selection is complete*/
 
             // thumb
-            row.insertCell(-1).appendChild( globalThumbs.displayThumb( record._id));
+            row.insertCell(-1).appendChild( thumbs.displayThumb( record._id));
             // cells
             this.collist
             .slice(1)
@@ -2204,7 +2203,7 @@ class MultiTable {
             const plus = fs.querySelector(".triggerbutton") ;
             this.cat_ob[cat].button = plus;
             plus.onclick = () => {
-                globalThumbs.hide();
+                thumbs.hide();
                 if ( this.cat_ob[cat].visible ) {
                     plus.innerHTML= "&#10133;" ;
                     tb.style.display = "none" ;
@@ -2214,7 +2213,7 @@ class MultiTable {
                     tb.style.display = "" ;
                     this.cat_ob[cat].visible = true ;
                 }
-                globalThumbs.show();
+                thumbs.show();
             } ;                
         })) ;
     }
@@ -2292,7 +2291,7 @@ class SearchTable extends ThumbTable {
             row.title=`${record._id} # ${record.Link}`;
             /* Select and edit -- need to make sure selection is complete*/
             // thumb
-            row.insertCell(-1).appendChild( globalThumbs.displayThumb(record._id));
+            row.insertCell(-1).appendChild( thumbs.displayThumb(record._id));
             // cells
             this.collist
             .slice(1)
