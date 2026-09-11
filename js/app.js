@@ -223,7 +223,6 @@ globalThis.structSettings = [
 //globalThis. globalAddress  = null ;
 globalThis. globalCropper  = null ;
 globalThis. globalPotData  = null ;
-globalThis. globalSearch   = null;
 globalThis. globalSettings = {} ;
 globalThis. globalStorage  = null ;
 globalThis. globalTable    = null ;
@@ -1208,7 +1207,7 @@ new class SearchList extends Pagelist {
         pot.unselect() ;
         new StatBox() ;
         globalTable = new SearchTable() ;
-        globalSearch.setTable();
+        search.setTable();
         thumbs.show() ;
     }
 }() ;
@@ -2314,7 +2313,7 @@ class SearchTable extends ThumbTable {
     }
 }
 
-class Search { // singleton class
+export class Search { // singleton class
     constructor() {
         this.select_id = null ;
 
@@ -2405,4 +2404,5 @@ class Search { // singleton class
 }
 
 // Set up text search
-globalSearch = new Search();
+export const search = new Search() ;
+globalThis.search = search ; // for index.html
