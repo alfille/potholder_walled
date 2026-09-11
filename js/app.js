@@ -1304,7 +1304,7 @@ export class Page { // singleton class
             case "PotPix":
             case "PotPixEdit":
                 this.TLlast = pot.id;
-                this.TL.src = thumbs.displayThumb( pot.id ) ;
+                this.TL.src = thumbs.display( pot.id ) ;
                 break ;
             default:
                 if ( this.TLlast != null ) {
@@ -1877,7 +1877,7 @@ class Thumbs {
         }
     }
 
-    displayThumb( pid = pot.id ) {
+    display( pid = pot.id ) {
         const img = new Image(100,100);
         img.classList.add("ThumbPhoto");
         img.title = pid;
@@ -1923,9 +1923,9 @@ class Thumbs {
         this.bottom.onclick = (e) => this.click(e) ;
         Object.keys(this.thumblist).forEach( (p,i) => {
             if ( i < this.nside ) {
-                this.side.appendChild(this.displayThumb(p)) ;
+                this.side.appendChild(this.display(p)) ;
             } else {
-                this.bottom.appendChild(this.displayThumb(p)) ;
+                this.bottom.appendChild(this.display(p)) ;
             }
             });
         this.showing = true ;
@@ -1947,7 +1947,7 @@ class Thumbs {
     }
 }
 
-thumbs = new Thumbs() ;
+export const thumbs = new Thumbs() ;
 
 class SortTable {
     constructor( collist, tableId, aliaslist=[] ) {
@@ -2105,7 +2105,7 @@ class ThumbTable extends SortTable {
             /* Select and edit -- need to make sure selection is complete*/
 
             // thumb
-            row.insertCell(-1).appendChild( thumbs.displayThumb( record._id));
+            row.insertCell(-1).appendChild( thumbs.display( record._id));
             // cells
             this.collist
             .slice(1)
@@ -2291,7 +2291,7 @@ class SearchTable extends ThumbTable {
             row.title=`${record._id} # ${record.Link}`;
             /* Select and edit -- need to make sure selection is complete*/
             // thumb
-            row.insertCell(-1).appendChild( thumbs.displayThumb(record._id));
+            row.insertCell(-1).appendChild( thumbs.display(record._id));
             // cells
             this.collist
             .slice(1)
