@@ -1693,5 +1693,5 @@ export class Crop {
 }
 
 export const crop = new Crop() ;
-gobalThis.crop = crop ;
+globalThis.crop = crop ;
 //crop = new Crop() ;
