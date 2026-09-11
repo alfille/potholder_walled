@@ -25,6 +25,7 @@ import {
     log,
     page,
     thumbs,
+    storage,
 } from "./app.js" ;
     
 // data entry page type
@@ -199,7 +200,7 @@ class SettingsData extends PotData {
     savePieceData() {
         this.loadDocData() ;
         Object.assign ( globalSettings, this.doc ) ;
-        globalStorage.set( "settings", globalSettings ) ;
+        storage.set( "settings", globalSettings ) ;
         if (globalSettings.fullscreen=="always") {
             document.documentElement.requestFullscreen()
             .finally( _ => page.show("back") ) ;

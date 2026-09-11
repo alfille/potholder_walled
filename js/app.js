@@ -224,7 +224,6 @@ globalThis.structSettings = [
 globalThis. globalCropper  = null ;
 globalThis. globalPotData  = null ;
 globalThis. globalSettings = {} ;
-globalThis. globalStorage  = null ;
 globalThis. globalTable    = null ;
 
 globalThis. rightSize = ( imgW, imgH, limitW, limitH ) => {
@@ -671,7 +670,7 @@ export class DatabaseManager { // convenience class
     clearLocal() {
         const remove = confirm("Remove the data from this device?\nThe central database will not be affected.") ;
         if ( remove ) {
-            globalStorage.clear();
+            storage.clear();
             // clear (local) database
             database.db.destroy()
             .finally( _ => location.reload() ); // force reload
@@ -879,7 +878,7 @@ new class Settings extends Pagelist {
     }
 }() ;
 
-class Storage { //convenience class
+export class Storage { //convenience class
     // all values placed in global scope as well
     
     set( cname, value ) {
@@ -914,7 +913,7 @@ class Storage { //convenience class
         localStorage.clear();
     }
 }
-globalStorage = new Storage() ;
+export const storage = new Storage() ;
 
 new class MakeQR extends Pagelist {
     show_content() {
@@ -1374,8 +1373,8 @@ export class Address {
         this.database_url.pathname = "/couchdb/" ;        
 
         // get stored url
-        const d = globalStorage.get( "database" );
-        const s = globalStorage.get( "server"   );
+        const d = storage.get( "database" );
+        const s = storage.get( "server"   );
         
         // store new url
         this._store_url();
@@ -1390,8 +1389,8 @@ export class Address {
     }
     
     _store_url() {
-        globalStorage.set( "database", this.database ) ;
-        globalStorage.set( "server", this.server ) ;
+        storage.set( "database", this.database ) ;
+        storage.set( "server", this.server ) ;
     }
     
     get_database() {
@@ -1440,7 +1439,7 @@ window.onload = () => {
         console:"true",
         img_format:"webp",
         fullscreen: "big_picture",
-        }, globalStorage.get("settings") ) ;
+        }, storage.get("settings") ) ;
     
     // set database from URL
     console.log("Address");
