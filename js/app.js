@@ -1417,9 +1417,10 @@ export class Address {
         return faux ;
     }
 }
-//globalAddress = new Address() ;
-const address = new Address() ;
-const settings = Object.assign( {
+export const address = new Address() ;
+
+// display settings and the like
+export const settings = Object.assign( {
     console:"true",
     img_format:"webp",
     fullscreen: "big_picture",
