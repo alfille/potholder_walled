@@ -224,7 +224,6 @@ globalThis.structSettings = [
 //globalThis. globalAddress  = null ;
 //globalThis. crop  = null ;
 globalThis. globalPotData  = null ;
-globalThis. globalSettings = {} ;
 globalThis. globalTable    = null ;
 
 globalThis. rightSize = ( imgW, imgH, limitW, limitH ) => {
@@ -773,7 +772,7 @@ export class Log{
         const ttl = title ?? page.current() ;
         const msg = err.message ?? err ;
         this.list.push(`${ttl}: ${msg}`);
-        if ( globalSettings?.console == "true" ) {
+        if ( settings?.console == "true" ) {
             console.group() ;
             console.log( ttl, msg ) ;
             console.trace();
@@ -874,7 +873,7 @@ new class DatabaseInfo extends Pagelist {
 new class Settings extends Pagelist {
     show_content() {
         new TextBox("Display Settings") ;
-        const doc = Object.assign( {}, globalSettings ) ;
+        const doc = Object.assign( {}, settings ) ;
         globalPotData = new SettingsData( doc, structSettings );
     }
 }() ;
@@ -1275,7 +1274,7 @@ export class Page { // singleton class
     
     show( page, detail=null ) { // main routine for displaying different "pages" by hiding different elements
         // detail is for extra data to pass on
-        if ( globalSettings?.console == "true" ) {
+        if ( settings?.console == "true" ) {
             console.log("SHOW",page,"STATE",this.path);
         }
 
@@ -1420,6 +1419,11 @@ export class Address {
 }
 //globalAddress = new Address() ;
 const address = new Address() ;
+const settings = Object.assign( {
+    console:"true",
+    img_format:"webp",
+    fullscreen: "big_picture",
+    }, storage.get("settings") ) ;
 
 // Application starting point
 window.onload = () => {
@@ -1434,13 +1438,6 @@ window.onload = () => {
         .register('/sw.js')
         .catch( err => log.err(err,"Service worker registration") );
     }
-
-    // Settings
-    globalSettings = Object.assign( {
-        console:"true",
-        img_format:"webp",
-        fullscreen: "big_picture",
-        }, storage.get("settings") ) ;
     
     // set database from URL
     console.log("Address");
@@ -1501,7 +1498,7 @@ window.onload = () => {
         database.foreverSync();
         
         // Show screen
-        ((globalSettings.fullscreen=="always") ?
+        ((settings.fullscreen=="always") ?
             document.documentElement.requestFullscreen()
             : Promise.resolve())
         .finally( _ => page.show("MainMenu") ) ;
@@ -1701,7 +1698,7 @@ class PotImages {
                         } ;
                     document.getElementById("modal_close").onclick=()=>{
                         screen.orientation.onchange=()=>{};
-                        if (globalSettings.fullscreen=="big_picture") {
+                        if (settings.fullscreen=="big_picture") {
                             if ( document.fullscreenElement ) {
                                 document.exitFullscreen() ;
                             }
@@ -1732,7 +1729,7 @@ class PotImages {
                         edit.style.visibility = "visible";
                         edit.onclick=()=> {
                             screen.orientation.onchange=()=>{};
-                            if (globalSettings.fullscreen=="big_picture") {
+                            if (settings.fullscreen=="big_picture") {
                                 if ( document.fullscreenElement ) {
                                     document.exitFullscreen() ;
                                 }
@@ -1743,7 +1740,7 @@ class PotImages {
                     } else {
                         edit.style.visibility = "hidden";
                     }
-                    ((globalSettings.fullscreen=="big_picture") ?
+                    ((settings.fullscreen=="big_picture") ?
                         document.documentElement.requestFullscreen()
                         : Promise.resolve() )
                     .finally( _ => {

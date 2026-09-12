@@ -26,6 +26,7 @@ import {
     page,
     thumbs,
     storage,
+    settings,
 } from "./app.js" ;
     
 // data entry page type
@@ -199,9 +200,9 @@ class DatabaseData extends PotDataRaw {
 class SettingsData extends PotData {
     savePieceData() {
         this.loadDocData() ;
-        Object.assign ( globalSettings, this.doc ) ;
-        storage.set( "settings", globalSettings ) ;
-        if (globalSettings.fullscreen=="always") {
+        Object.assign ( settings, this.doc ) ;
+        storage.set( "settings", settings ) ;
+        if (settings.fullscreen=="always") {
             document.documentElement.requestFullscreen()
             .finally( _ => page.show("back") ) ;
         } else {
@@ -1249,7 +1250,7 @@ export class Crop {
         // Stop Scroll
         window.onscroll = () => window.scrollTo(0,0);
 
-        ((globalSettings.fullscreen=="big_picture") ?
+        ((settings.fullscreen=="big_picture") ?
             document.documentElement.requestFullscreen()
             : Promise.resolve() )
         .finally( _ => this.crop_reset() );
@@ -1659,7 +1660,7 @@ export class Crop {
         // Start Scroll
         window.onscroll = () => {};
 
-        if (globalSettings.fullscreen=="big_picture") {
+        if (settings.fullscreen=="big_picture") {
             if ( document.fullscreenElement ) {
                 document.exitFullscreen() ;
             }
