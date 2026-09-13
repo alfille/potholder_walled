@@ -1440,6 +1440,12 @@ window.onload = () => {
         .catch( err => log.err(err,"Service worker registration") );
     }
     
+    // settings from storage (if there)
+    const s = storage.get( "settings" ) ;
+    if (s) {
+        Object.assign( storage, s ) ;
+    }
+    
     // set database from URL
     console.log("Address");
 //    const new_address = globalAddress.test_and_store() ;
