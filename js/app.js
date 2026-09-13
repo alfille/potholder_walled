@@ -1032,12 +1032,13 @@ class ListGroup extends Pagelist {
         pot.unselect() ;
         const item = structData.Data.find( i => i.name == this.field_name ) ;
         if ( item ) {
-            new ListBox(`grouped by ${item?.alias ?? item.name}`) ;
+            const text = `grouped by ${item?.alias ?? item.name}` ;
+            let table = null ;
             switch (item.type) {
                 case "radio":
                 case "list":
                 case "text":
-                    globalTable = new MultiTable( (doc)=> {
+                    table = new MultiTable( (doc)=> {
                         if ( (item.name in doc) && (doc[item.name]!=="") ) {
                             return [doc[item.name] ] ;
                         } else {
@@ -1046,7 +1047,7 @@ class ListGroup extends Pagelist {
                         });
                     break ;
                 case "checkbox":
-                    globalTable = new MultiTable( (doc)=> {
+                    table = new MultiTable( (doc)=> {
                         if ( (item.name in doc) && (doc[item.name].length > 0) ) {
                             return doc[item.name] ;
                         } else {
@@ -1055,7 +1056,7 @@ class ListGroup extends Pagelist {
                         });
                     break ;
                 case "array":
-                    globalTable = new MultiTable( (doc)=> {
+                    table = new MultiTable( (doc)=> {
                         if ( (item.name in doc) && (doc[item.name].length>0) ) {
                             return doc[item.name].map( t => t.type ) ;
                         } else {
@@ -1064,6 +1065,7 @@ class ListGroup extends Pagelist {
                         });
                     break ;
             }
+            new ListBox( text, table ) ;
             thumbs.show() ;
         } else {
             page.show("ListMenu");
@@ -1539,9 +1541,9 @@ class TextBox extends TitleBox {
 }
 
 class ListBox extends TitleBox {
-    constructor( text ) {
+    constructor( text, table ) {
         super();
-        this.show( `<B><button type="button" class="allGroup" onclick="globalTable.close_all()">&#10134;</button>&nbsp;&nbsp;<button type="button" class="allGroup" onclick="globalTable.open_all()">&#10133;</button>&nbsp;&nbsp;${text}</B>` ) ;
+        this.show( `<B><button type="button" class="allGroup" onclick="table.close_all()">&#10134;</button>&nbsp;&nbsp;<button type="button" class="allGroup" onclick="table.open_all()">&#10133;</button>&nbsp;&nbsp;${text}</B>` ) ;
     }
 }
 
