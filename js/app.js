@@ -224,7 +224,6 @@ globalThis.structSettings = [
 //globalThis. globalAddress  = null ;
 //globalThis. crop  = null ;
 globalThis. globalPotData  = null ;
-globalThis. globalTable    = null ;
 
 globalThis. rightSize = ( imgW, imgH, limitW, limitH ) => {
     const h = limitW * imgH / imgW ;
@@ -954,9 +953,9 @@ new class AllPieces extends Pagelist {
     show_content() {
         pot.unselect() ;
         new StatBox() ;
-        globalTable = new PotTable();
+        const table = new PotTable();
         pot.getAllIdDoc()
-        .then( (docs) => globalTable.fill(docs.rows ) )
+        .then( (docs) => table.fill(docs.rows ) )
         .catch( (err) => log.err(err) );
         thumbs.show() ;
     }
@@ -966,9 +965,9 @@ new class Orphans extends Pagelist {
     show_content() {
         pot.unselect() ;
         new StatBox() ;
-        globalTable = new OrphanTable();
+        const table = new OrphanTable();
         pot.getAllIdDoc()
-        .then( (docs) => globalTable.fill(docs.rows ) )
+        .then( (docs) => table.fill(docs.rows ) )
         .catch( (err) => log.err(err) );
         thumbs.show() ;
     }
@@ -991,9 +990,9 @@ new class AssignPic extends Pagelist {
             }
         }
         // make table
-        globalTable = new AssignTable();
+        const table = new AssignTable();
         pot.getAllIdDoc()
-        .then( (docs) => globalTable.fill(docs.rows ) )
+        .then( (docs) => table.fill(docs.rows ) )
         .catch( (err) => log.err(err) );
     }
 }() ;
