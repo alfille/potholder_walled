@@ -2388,7 +2388,7 @@ export class Search { // singleton class
     }
     
     setTable( docs=[] ) {
-        table.fill(docs);
+        this.table.fill(docs);
     }
 
     structParse( struct ) {
