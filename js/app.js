@@ -1544,7 +1544,10 @@ class ListBox extends TitleBox {
     constructor( text, table ) {
         super();
         this.table = table
-        this.show( `<B><button type="button" class="allGroup" onclick="this.table.close_all()">&#10134;</button>&nbsp;&nbsp;<button type="button" class="allGroup" onclick="this.table.open_all()">&#10133;</button>&nbsp;&nbsp;${text}</B>` ) ;
+//        this.show( `<B><button type="button" class="allGroup" onclick="this.table.close_all()">&#10134;</button>&nbsp;&nbsp;<button type="button" class="allGroup" onclick="this.table.open_all()">&#10133;</button>&nbsp;&nbsp;${text}</B>` ) ;
+        this.show( `<B><button type="button" class="allGroup" id="close_all">&#10134;</button>&nbsp;&nbsp;<button type="button" class="allGroup" id="open_all">&#10133;</button>&nbsp;&nbsp;${text}</B>` ) ;
+        document.getElementById("close_all").onclick = table.close_all();
+        document.getElementById("open_all").onclick = table.open_all();
     }
 }
 
