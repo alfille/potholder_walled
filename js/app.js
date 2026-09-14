@@ -892,20 +892,25 @@ export class Storage { //convenience class
     
     get( cname ) {
         // local storage
-        const ls = localStorage.getItem(cname);
-        if ( ls == null ) {
-            return null ;
-        }
-
-        let ls_parsed;
         try {
-            ls_parsed = JSON.parse( ls ) ;
+            const ls = localStorage.getItem(cname);
+            if ( ls == null ) {
+                return null ;
+            }
+
+            let ls_parsed;
+            try {
+                ls_parsed = JSON.parse( ls ) ;
+            }
+            catch {
+                ls_parsed = ls ;
+            }
+            //globalThis[cname] = ls_parsed;
+            return ls_parsed ;
         }
         catch {
-            ls_parsed = ls ;
+            return null ;
         }
-        globalThis[cname] = ls_parsed;
-        return ls_parsed ;
     }
     
     clear() {
