@@ -1222,7 +1222,6 @@ export class Page { // singleton class
     reset() {
         // resets to just MainMenu
         this.path = [ "MainMenu" ] ;
-        storage.set("path",this.path);
     }
 
     back() {
@@ -1231,7 +1230,6 @@ export class Page { // singleton class
         if ( this.path.length == 0 ) {
             this.reset();
         }
-        storage.set("path",this.path);
     }
 
     current() {
@@ -1254,8 +1252,6 @@ export class Page { // singleton class
                 this.path = this.path.slice( iop ) ;
             }
         }
-        console.log("Set path",this.path);
-        storage.set("path",this.path);
     }
 
     isThis( page ) {
@@ -1263,17 +1259,28 @@ export class Page { // singleton class
     }
 
     restore() {
-        this.path = storage.get("path") ;
-        console.log("stored path",this.path);
-        if (this.path == null) {
+        state = storage.get("state") ;
+        console.log("stored state",state);
+
+        if (state == null) {
             this.reset();
         }
-        if (this.path.length<1) {
-            this.reset() ;
-        }
-        const page = this.path.shift() ;
-        console.log( page, this.path ) ;
+        const page = state.?page ?? null ;
+        const detail = state.?detail ?? null ;
+        this.path = state.?path ?? null ;
+        pot.id = state.?id ?? null
+        console.log("page,path,potId".page,path,pot.id);
+
         this.show( page ) ;
+    }
+
+    save(page,detail) {
+        storage.set("state", {
+            page:page,
+            detail:detail,
+            path:this.path,
+            id:pot.id,
+        } );
     }
 
     forget() {
@@ -1289,6 +1296,7 @@ export class Page { // singleton class
     } 
     
     show( page, detail=null ) { // main routine for displaying different "pages" by hiding different elements
+        this.store( page, detail );
         // detail is for extra data to pass on
         if ( settings?.console == "true" ) {
             console.log("SHOW",page,"STATE",this.path);
