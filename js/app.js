@@ -892,25 +892,20 @@ export class Storage { //convenience class
     
     get( cname ) {
         // local storage
-        try {
-            const ls = localStorage.getItem(cname);
-            if ( ls == null ) {
-                return null ;
-            }
-
-            let ls_parsed;
-            try {
-                ls_parsed = JSON.parse( ls ) ;
-            }
-            catch {
-                ls_parsed = ls ;
-            }
-            //globalThis[cname] = ls_parsed;
-            return ls_parsed ;
-        }
-        catch {
+        const ls = localStorage.getItem(cname);
+        if ( ls == null ) {
             return null ;
         }
+
+        let ls_parsed;
+        try {
+            ls_parsed = JSON.parse( ls ) ;
+        }
+        catch {
+            ls_parsed = ls ;
+        }
+        //globalThis[cname] = ls_parsed;
+        return ls_parsed ;
     }
     
     clear() {
@@ -1264,7 +1259,7 @@ export class Page { // singleton class
     }
 
     restore() {
-        state = storage.get("state") ;
+        const state = storage.get("state") ;
         console.log("stored state",state);
 
         if (state == null) {
