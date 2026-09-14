@@ -1263,6 +1263,7 @@ export class Page { // singleton class
 
     restore() {
         this.path = storage.get("path") ;
+        console.log("stored path",this.path);
         if (this.path == null) {
             this.reset();
         }
@@ -1270,6 +1271,7 @@ export class Page { // singleton class
             this.reset() ;
         }
         const page = this.path.shift() ;
+        console.log( page, this.path ) ;
         this.show( page ) ;
     }
 
