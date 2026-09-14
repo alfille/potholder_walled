@@ -1267,9 +1267,12 @@ export class Page { // singleton class
         }
         const page = state?.page ?? null ;
         const detail = state?.detail ?? null ;
-        this.path = state?.path ?? null ;
+        this.path = state?.path ?? [] ;
+        if ( ! Array.isArray(this.path) ) {
+            this.path = [] ;
+        }
         pot.id = state?.id ?? null
-        console.log("page,path,potId".page,path,pot.id);
+        console.log("page,path,potId".page,this.path,pot.id);
 
         this.show( page ) ;
     }
