@@ -1254,6 +1254,7 @@ export class Page { // singleton class
                 this.path = this.path.slice( iop ) ;
             }
         }
+        console.log("Set path",this.path);
         storage.set("path",this.path);
     }
 
