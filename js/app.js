@@ -1277,7 +1277,7 @@ export class Page { // singleton class
         this.show( page ) ;
     }
 
-    save(page,detail) {
+    store(page,detail) {
         storage.set("state", {
             page:page,
             detail:detail,
