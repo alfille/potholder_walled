@@ -1265,10 +1265,10 @@ export class Page { // singleton class
         if (state == null) {
             this.reset();
         }
-        const page = state.?page ?? null ;
-        const detail = state.?detail ?? null ;
-        this.path = state.?path ?? null ;
-        pot.id = state.?id ?? null
+        const page = state?.page ?? null ;
+        const detail = state?.detail ?? null ;
+        this.path = state?.path ?? null ;
+        pot.id = state?.id ?? null
         console.log("page,path,potId".page,path,pot.id);
 
         this.show( page ) ;
