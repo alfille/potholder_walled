@@ -1222,6 +1222,7 @@ export class Page { // singleton class
     reset() {
         // resets to just MainMenu
         this.path = [ "MainMenu" ] ;
+        storage.set("path",this.path);
     }
 
     back() {
@@ -1230,6 +1231,7 @@ export class Page { // singleton class
         if ( this.path.length == 0 ) {
             this.reset();
         }
+        storage.set("path",this.path);
     }
 
     current() {
@@ -1242,9 +1244,7 @@ export class Page { // singleton class
     add( page = null ) {
         if ( page == "back" ) {
             this.back();
-        } else if ( page == null ) {
-            return ;
-        } else {
+        } else if ( page != null ) {
             const iop = this.path.indexOf( page ) ;
             if ( iop < 0 ) {
                 // add to from of page list
@@ -1254,10 +1254,23 @@ export class Page { // singleton class
                 this.path = this.path.slice( iop ) ;
             }
         }
+        storage.set("path",this.path);
     }
 
     isThis( page ) {
         return this.current()==page ;
+    }
+
+    restore() {
+        this.path = storage.get("path") ;
+        if (this.path == null) {
+            this.reset();
+        }
+        if (this.path.length<1) {
+            this.reset() ;
+        }
+        const page = this.path.shift() ;
+        this.show( page ) ;
     }
 
     forget() {
@@ -1507,7 +1520,7 @@ window.onload = () => {
         ((settings.fullscreen=="always") ?
             document.documentElement.requestFullscreen()
             : Promise.resolve())
-        .finally( _ => page.show("MainMenu") ) ;
+        .finally( _ => page.restore() ) ;
         
     } else {
         // bad database usl
