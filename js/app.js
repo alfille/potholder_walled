@@ -1272,7 +1272,7 @@ export class Page { // singleton class
             this.path = [] ;
         }
         pot.id = state?.id ?? null
-        console.log("page,path,potId".page,this.path,pot.id);
+        console.log("page,path,potId",page,this.path,pot.id);
 
         this.show( page ) ;
     }
