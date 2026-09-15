@@ -1217,6 +1217,7 @@ export class Page { // singleton class
         this.path = [];
         this.TL = document.getElementById("TopLeftImage") ;
         this.TLlast = null ;
+        this.in_edit = false ;
     }
 
     reset() {
@@ -1258,7 +1259,7 @@ export class Page { // singleton class
         return this.current()==page ;
     }
 
-    restore() {
+    restore(internal = false) {
         const state = storage.get("state") ;
         console.log("stored state",state);
 
@@ -1274,7 +1275,13 @@ export class Page { // singleton class
         pot.id = state?.id ?? null
         console.log("page,path,potId",page,this.path,pot.id);
 
-        this.show( page ) ;
+        if ( internal ) {
+            if ( ! this.in_edit ) {
+                this.reshow( page, detail );
+            }
+        } else {
+            this.show( page, detail ) ;
+        }
     }
 
     store(page,detail) {
@@ -1299,6 +1306,7 @@ export class Page { // singleton class
     } 
     
     show( page, detail=null ) { // main routine for displaying different "pages" by hiding different elements
+        this.in_edit = false ;
         this.store( page, detail );
         // detail is for extra data to pass on
         if ( settings?.console == "true" ) {
@@ -1311,6 +1319,10 @@ export class Page { // singleton class
         globalPotData = null;
         document.querySelector(".ContentTitleHidden").style.display = "none";
 
+        this.reshow( page, detail ) ;
+    }
+    
+    reshow( page, detail=null ) { // re-entry for updated thumbs
         this.show_normal(); // basic page display setup
 
         // send to page-specific code
@@ -1519,10 +1531,7 @@ window.onload = () => {
             } else {
                 thumbs.getOne( change.id ) ;
             }
-            // update screen display
-            if ( page.isThis("AllPieces") ) {
-                page.show("AllPieces");
-            }
+            page.restore( true ) ;
             })
         .catch( err => log.err(err,"Initial search database") );
 

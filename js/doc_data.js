@@ -57,6 +57,7 @@ class PotDataRaw { // singleton class
     }
 
     edit_doc() {
+        page.in_edit = true ;
         this.list.edit_doc();
         document.querySelectorAll(".savedata").forEach( s => s.disabled = true ) ;
     }
