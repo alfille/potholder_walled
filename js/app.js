@@ -2001,23 +2001,23 @@ class Thumbs {
 export const thumbs = new Thumbs() ;
 
 class SortTable {
-    constructor( collist, tableId, aliaslist=[] ) {
+    constructor( column_list, tableId, column_aliases=[] ) {
         this.tbl = document.getElementById(tableId);
         this.tbl.innerHTML = "";
-        this.collist = collist;
+        this.column_list = column_list;
         
-        // alias-list is a list in form (list of lists):
+        // column_aliases is a list in form (list of lists):
         //[ [fieldname, aliasname, transformfunction],...]
         
         this.aliases={}; // Eventually will have an alias and function for all columns, either default, or specified
-        this.collist.forEach( f => this.aliasAdd(f) ) ; // default aliases
-        aliaslist.forEach( a => this.aliasAdd(a[0],a[1],a[2]) );
+        this.column_list.forEach( f => this.aliasAdd(f) ) ; // default aliases
+        column_aliases.forEach( a => this.aliasAdd(a[0],a[1],a[2]) );
 
         // Table Head
         const header = this.tbl.createTHead();
         const row = header.insertRow(0);
         row.classList.add('head');
-        this.collist.forEach( (f,i) => row.insertCell(i).outerHTML=`<th>${this.aliases[f].name}</th>` );
+        this.column_list.forEach( (f,i) => row.insertCell(i).outerHTML=`<th>${this.aliases[f].name}</th>` );
 
         // Table Body
         const tbody = document.createElement('tbody');
@@ -2052,13 +2052,13 @@ class SortTable {
         // typically called with doc.rows from allDocs
         const tbody = this.tbl.querySelector('tbody');
         tbody.innerHTML = "";
-        //let collist = this.collist;
+        //let column_list = this.column_list;
         doclist.forEach( (doc) => {
             const row = tbody.insertRow(-1);
             const record = doc.doc;
             row.title=record._id;
             /* Select and edit -- need to make sure selection is complete*/
-            this.collist.forEach( (colname,i) => {
+            this.column_list.forEach( (colname,i) => {
                 const c = row.insertCell(i);
                 c.innerHTML=(this.aliases[colname].value)(record) ;
             });
@@ -2140,12 +2140,13 @@ class SortTable {
 }
 
 class ThumbTable extends SortTable {
-    constructor( collist, tableId, aliaslist=[] ) {
-        collist.unshift("image");
-        super( collist, tableId, aliaslist ) ;
+    constructor( column_list, tableId, column_aliases=[] ) {
+        column_list.unshift("image");
+        super( column_list, tableId, column_aliases ) ;
     }
 
     fill( doclist ) {
+        console.log("-----thumb fill-----");
         // typically called with doc.rows from allDocs
         const tbody = this.tbl.querySelector('tbody');
         tbody.innerHTML = "";
@@ -2158,7 +2159,7 @@ class ThumbTable extends SortTable {
             // thumb
             row.insertCell(-1).appendChild( thumbs.display( record._id));
             // cells
-            this.collist
+            this.column_list
             .slice(1)
             .forEach( colname => {
                 const c = row.insertCell(-1);
@@ -2171,31 +2172,31 @@ class ThumbTable extends SortTable {
 
 class PotTable extends ThumbTable {
     constructor(
-        collist=["type","series","start_date" ],
+        column_list=["type","series","start_date" ],
         tableId="AllPiecesTable",
-        aliaslist=
+        column_aliases=
             [
                 ["Thumbnail","Picture", (doc)=> `${doc.artist}`],
                 ['start_date','Date',null],
                 ['series','Series',null],
                 ['type','Form',null]
             ] ) {
-        super( collist, tableId, aliaslist ) ;
+        super( column_list, tableId, column_aliases ) ;
     }
 }
 
 class OrphanTable extends PotTable {
     constructor(
-        collist=["_id","fields" ],
+        column_list=["_id","fields" ],
         tableId="AllPiecesTable",
-        aliaslist=
+        column_aliases=
             [
                 ["Thumbnail","Picture", (doc)=> `${doc.artist}`],
                 ['fields','Orphans',(doc)=>this.ofields(doc)],
                 ['_id','ID',(doc)=>`${doc._id}`]
             ] ) {
         
-        super( collist, tableId, aliaslist ) ;
+        super( column_list, tableId, column_aliases ) ;
 
         // list of good fields
         this.gfields = [ 
@@ -2215,54 +2216,61 @@ class OrphanTable extends PotTable {
 }
 
 class MultiTable {
-    constructor( cat_func, collist=["type","series","start_date" ], aliaslist=[] ) {
-        // cat_func outputs a category array:
-        // [] or  [category] or [category1, category2,...]
-        // sort_func operates on a doc record
-
-        /* Example:
-         *  new MultiTable( "Artist", (doc)=>[doc.artist], "series",document.getElementById("MultiTableContent") );
+    constructor( category_func, column_list=["type","series","start_date" ], column_aliases=[] ) {
+        /* category_func outputs a category array:
+         *  [] or  [category] or [category1, category2,...]
+         * 
+         * column_list is a list of document field names that correspond to actual columns in the table
+         * 
+         * column_aliases is a list of field ro alias translations to make the field names more readable in the column headers
+         * 
+         * Example:
+         *  new MultiTable( (doc)=>[doc.artist] ) );
+         * 
+         * Design:
+         * MultiTable creates a PotTable for each category (from the category_func output)
         */
 
-        // catagories
-        this.cat_ob = {} ;
+        // categories
+        // will be a {category:[doc list]}
+        this.category_tables = {} ;
 
         // parent container
         const parent = document.getElementById("MultiTableContent") ;
         parent.innerHTML="";
         const fieldset = document.getElementById("templates").querySelector(".MultiFieldset");
         
-        this.apply_cat( cat_func )
-        .then( () => Object.keys(this.cat_ob).toSorted().forEach( cat => {
+        this.apply_cat( category_func )
+        .then( () => Object.keys(this.category_tables).toSorted().forEach( cat => {
             // fieldset holds a sorttable
             const fs = fieldset.cloneNode( true ) ;
-            fs.querySelector(".multiCat").innerText = `${cat} (${this.cat_ob[cat].rows.length})` ;
+            fs.querySelector(".multiCat").innerText = `${cat} (${this.category_tables[cat].rows.length})` ;
 
             // setup table
             const tb = fs.querySelector("table");
             tb.id = `MT${cat}` ;
             tb.style.display="";
             parent.appendChild(fs) ;
-            const cl = [...collist] ;
-            this.cat_ob[cat].table=new PotTable( cl, tb.id ) ;
+            const cl = [...column_list] ;
+            this.category_tables[cat].table=new PotTable( cl, tb.id ) ;
 
             // put data in it
-            this.cat_ob[cat].table.fill(this.cat_ob[cat].rows) ;
+            this.category_tables[cat].table.fill(this.category_tables[cat].rows) ;
 
             // fieldset open/close toggle
-            this.cat_ob[cat].visible=true ;
+            this.category_tables[cat].visible=true ;
             const plus = fs.querySelector(".triggerbutton") ;
-            this.cat_ob[cat].button = plus;
+            this.category_tables[cat].button = plus;
             plus.onclick = () => {
                 thumbs.hide();
-                if ( this.cat_ob[cat].visible ) {
+                if ( this.category_tables[cat].visible ) {
                     plus.innerHTML= "&#10133;" ;
                     tb.style.display = "none" ;
-                    this.cat_ob[cat].visible = false ;
+                    this.category_tables[cat].visible = false ;
                 } else {
                     plus.innerHTML= "&#10134;" ;
                     tb.style.display = "" ;
-                    this.cat_ob[cat].visible = true ;
+                    this.category_tables[cat].visible = true ;
                 }
                 thumbs.show();
             } ;                
@@ -2270,39 +2278,41 @@ class MultiTable {
     }
     
     // apply the function on all records to get categorized records
-    apply_cat( cat_func ) {
+    //  [ cat:doc]
+    apply_cat( category_func ) {
         const a2a = [] ;
         return pot.getAllIdDoc()
         .then( docs => docs.rows
-            .forEach( r => (cat_func( r.doc )??['unknown'])
+            .forEach( r => (category_func( r.doc )??['unknown'])
                 .forEach( c => a2a.push( [c,r] ))
                  ))
         .then( () => this.arrays2object( a2a ) );
     }
         
     // split into separate records per category
+    // coallesce list into object -- can be sent to PotTable
     arrays2object( arrays ) {
         arrays.forEach( ([k,v]) => {
-            if ( k in this.cat_ob ) {
-                this.cat_ob[k].rows.push(v) ;
+            if ( k in this.category_tables ) {
+                this.category_tables[k].rows.push(v) ;
             } else {
-                this.cat_ob[k]={rows:[v]} ;
+                this.category_tables[k]={rows:[v]} ;
             }
         }) ;
     }
     
     open_all() {
-        Object.keys(this.cat_ob).forEach(cat => {
-            if ( ! this.cat_ob[cat].visible ) {
-                this.cat_ob[cat].button.click() ;
+        Object.keys(this.category_tables).forEach(cat => {
+            if ( ! this.category_tables[cat].visible ) {
+                this.category_tables[cat].button.click() ;
             }
         });
     }
                 
     close_all() {
-        Object.keys(this.cat_ob).forEach(cat => {
-            if ( this.cat_ob[cat].visible ) {
-                this.cat_ob[cat].button.click() ;
+        Object.keys(this.category_tables).forEach(cat => {
+            if ( this.category_tables[cat].visible ) {
+                this.category_tables[cat].button.click() ;
             }
         });
     }
@@ -2310,16 +2320,16 @@ class MultiTable {
 
 class AssignTable extends ThumbTable {
     constructor(
-        collist=["type","series","start_date" ],
+        column_list=["type","series","start_date" ],
         tableId="AssignPic",
-        aliaslist=
+        column_aliases=
             [
                 ["Thumbnail","Picture", (doc)=> `${doc.artist}`],
                 ['start_date','Date',null],
                 ['series','Series',null],
                 ['type','Form',null]
             ] ) {
-        super( collist, tableId, aliaslist ) ;
+        super( column_list, tableId, column_aliases ) ;
     }
 }
 
@@ -2344,7 +2354,7 @@ class SearchTable extends ThumbTable {
             // thumb
             row.insertCell(-1).appendChild( thumbs.display(record._id));
             // cells
-            this.collist
+            this.column_list
             .slice(1)
             .forEach( colname => {
                 const c = row.insertCell(-1);
