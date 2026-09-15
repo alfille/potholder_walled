@@ -1067,6 +1067,7 @@ class ListGroup extends Pagelist {
             new ListBox( text, table ) ;
             thumbs.show() ;
         } else {
+            console.log("LISTMENU");
             page.show("ListMenu");
         }
     }
@@ -1261,6 +1262,7 @@ export class Page { // singleton class
     }
 
     restore() {
+        console.log("RESTORE edit restores:",this.in_edit,this.restored);
         const state = storage.get("state") ;
         console.log("stored state",state);
 
@@ -1278,9 +1280,11 @@ export class Page { // singleton class
 
         if ( this.restored ) {
             if ( ! this.in_edit ) {
+                console.log("RESTORED",page);
                 this.reshow( page, detail );
             }
         } else {
+            console.log("Just RESOTRE",page);
             this.restored = true ;
             this.show( page, detail ) ;
         }
