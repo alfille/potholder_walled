@@ -1316,6 +1316,7 @@ export class Page { // singleton class
         // detail is for extra data to pass on
         if ( settings?.console == "true" ) {
             console.log("SHOW",page,"STATE",this.path);
+            console.trace() ;
         }
 
         this.add(page) ; // place in reversal list
@@ -1329,6 +1330,10 @@ export class Page { // singleton class
     }
     
     reshow( page, detail=null ) { // re-entry for updated thumbs
+        if ( settings?.console == "true" ) {
+            console.log("RESHOW",page,"STATE",this.path);
+            console.trace() ;
+        }
         this.show_normal(); // basic page display setup
 
         // send to page-specific code
