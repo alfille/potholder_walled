@@ -1218,6 +1218,7 @@ export class Page { // singleton class
         this.TL = document.getElementById("TopLeftImage") ;
         this.TLlast = null ;
         this.in_edit = false ;
+        this.restored = false ;
     }
 
     reset() {
@@ -1259,7 +1260,7 @@ export class Page { // singleton class
         return this.current()==page ;
     }
 
-    restore(internal = false) {
+    restore() {
         const state = storage.get("state") ;
         console.log("stored state",state);
 
@@ -1275,11 +1276,12 @@ export class Page { // singleton class
         pot.id = state?.id ?? null
         console.log("page,path,potId",page,this.path,pot.id);
 
-        if ( internal ) {
+        if ( this.restored ) {
             if ( ! this.in_edit ) {
                 this.reshow( page, detail );
             }
         } else {
+            this.restored = true ;
             this.show( page, detail ) ;
         }
     }
@@ -1516,7 +1518,7 @@ window.onload = () => {
         const q = new Query();
         q.create( structData.Data.concat(structData.Images) )
         .then( () => thumbs.getAll() ) // create thumbs
-        .then( () => page.restore( true ) ) // update page
+        .then( () => page.restore() ) // update page
         .catch( err => log.err(err,"Query cleanup") )
         ;
 
@@ -1532,7 +1534,7 @@ window.onload = () => {
             } else {
                 thumbs.getOne( change.id ) ;
             }
-            page.restore( true ) ;
+            page.restore() ;
             })
         .catch( err => log.err(err,"Initial search database") );
 
@@ -1544,7 +1546,7 @@ window.onload = () => {
         ((settings.fullscreen=="always") ?
             document.documentElement.requestFullscreen()
             : Promise.resolve())
-        .finally( _ => page.restore( false ) ) ;
+        .finally( _ => page.restore() ) ;
         
     } else {
         // bad database url
