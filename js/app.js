@@ -1541,9 +1541,9 @@ window.onload = () => {
             if ( change?.deleted ) {
                 thumbs.remove( change.id ) ;
             } else {
-                thumbs.getOne( change.id ) ;
+                thumbs.getOne( change.id )
+                .then( () => page.restore() ) ;
             }
-            page.restore() ;
             })
         .catch( err => log.err(err,"Initial search database") );
 
@@ -1868,66 +1868,112 @@ class Thumbs {
         this.NoPicture = null ; // uses default "NoPicture"
     }
 
-    _create( doc ) {
-        const pid = doc._id ;
-        if ( (doc?.images??[]).length<1) {
-            return ;
+    _create(doc) {
+        const pid = doc._id;
+
+        // 1. Guard clause returns a resolved promise immediately
+        if ((doc?.images ?? []).length < 1) {
+            return Promise.resolve();
         }
 
-        database.db.getAttachment(pid, doc.images[0].image )
-        .then(data => {
-            const url = URL.createObjectURL(data) ;
-            const t_img = new Image();
-            t_img.onload = () => {
-                URL.revokeObjectURL(url) ;
-                let crop = doc.images[0]?.crop ;
-                if ( !crop || crop.length!=4 ) {
-                    crop = [0,0,t_img.naturalWidth,t_img.naturalHeight] ;
-                }
-                // sw/sh in canvas units
-                const [iw,ih] = rightSize( this.canvas.width, this.canvas.height, crop[2], crop[3]  ) ;
-                // center and crop to maintain 1:1 aspect ratio
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                this.ctx.drawImage( t_img, crop[0] + (crop[2]-iw)/2, crop[1] + (crop[3]-ih)/2, iw, ih, 0, 0, this.canvas.width, this.canvas.height ) ;
-                this.canvas.toBlob( (blob) => this.thumblist[pid] = blob );
-                };
-            t_img.src = url ;
-        })
-        .catch( err => log.err(err) );
+        // 2. Return the outer promise chain
+        return database.db.getAttachment(pid, doc.images[0].image)
+            .then(data => {
+                return new Promise((resolve, reject) => {
+                    const url = URL.createObjectURL(data);
+                    const t_img = new Image();
+
+                    t_img.onerror = (err) => {
+                        URL.revokeObjectURL(url);
+                        reject(err);
+                    };
+
+                    t_img.onload = () => {
+                        URL.revokeObjectURL(url);
+
+                        let crop = doc.images[0]?.crop;
+                        if (!crop || crop.length !== 4) {
+                            crop = [0, 0, t_img.naturalWidth, t_img.naturalHeight];
+                        }
+
+                        // sw/sh in canvas units
+                        const [iw, ih] = rightSize(this.canvas.width, this.canvas.height, crop[2], crop[3]);
+
+                        // center and crop to maintain 1:1 aspect ratio
+                        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                        this.ctx.drawImage(t_img, crop[0] + (crop[2] - iw) / 2, crop[1] + (crop[3] - ih) / 2, iw, ih, 0, 0, this.canvas.width, this.canvas.height);
+
+                        // 3. Wrap canvas.toBlob in a Promise to resolve when finished
+                        this.canvas.toBlob((blob) => {
+                            this.thumblist[pid] = blob;
+                            resolve(blob);
+                        });
+                    };
+
+                    t_img.src = url;
+                });
+            })
+            .catch(err => {
+                log.err(err);
+                // Re-throw if you want callers to catch failures, 
+                // or leave it swallowed to resolve as undefined on error
+            });
     }
 
     getOne( pid = pot.id ) {
         return database.db.get( pid )
         .then( doc => this._create(doc) )
-        .then( _ => this.replot() )
+        .then( () => this.replot() )
         .catch( err => log.err(err) );
     }
 
     getAll() {
         return pot.getAllIdDoc()
-        .then( docs => {
-            if ( 'requestIdleCallback' in window ) {
-                if ( docs.rows.length > 0 ) {
-                    window.requestIdleCallback( () => this.getAllList(docs.rows),{timeout:100});
+            .then(docs => {
+                const rows = docs.rows || [];
+                if (rows.length === 0) return;
+
+                if ('requestIdleCallback' in window) {
+                    // 1. Wrap requestIdleCallback in a Promise
+                    return new Promise(resolve => {
+                        window.requestIdleCallback(() => {
+                            // Assuming getAllList returns a Promise or handles _create calls
+                            resolve(this.getAllList(rows));
+                        }, { timeout: 100 });
+                    });
+                } else {
+                    // 2. Map rows to _create promises and await them all
+                    return Promise.all(rows.map(r => this._create(r.doc)))
+                        .then(() => this.replot());
                 }
-            } else {
-                docs.rows.forEach( r => this._create( r.doc ) ) ;
-                this.replot() ;
-            }
             })
-        .catch( err => log.err(err) ) ;
+            .catch(err => log.err(err));
     }
 
-    getAllList( rows ) {
-        const r = rows.pop() ;
-        this._create( r.doc ) ;
-        if ( rows.length > 0 ) {
-            window.requestIdleCallback( () => this.getAllList( rows ), {timeout:100} ) ;
-        } else {
-            this.replot() ;
+    getAllList(rows) {
+        if (!rows || rows.length === 0) {
+            this.replot();
+            return Promise.resolve();
         }
-    }
 
+        const r = rows.pop();
+
+        // 1. Await the creation of the current item's thumbnail
+        return this._create(r.doc).then(() => {
+            if (rows.length > 0) {
+                // 2. Wrap the next idle step in a Promise to chain recursion
+                return new Promise(resolve => {
+                    window.requestIdleCallback(() => {
+                        resolve(this.getAllList(rows));
+                    }, { timeout: 100 });
+                });
+            } else {
+                // 3. Final item completed; trigger replot
+                this.replot();
+            }
+        });
+    }
+    
     display( pid = pot.id ) {
         const img = new Image(100,100);
         img.classList.add("ThumbPhoto");
