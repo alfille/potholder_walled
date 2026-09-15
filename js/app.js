@@ -1262,7 +1262,7 @@ export class Page { // singleton class
     }
 
     restore() {
-        console.log("RESTORE edit restores:",this.in_edit,this.restored);
+        console.log("RESTORE in_edit restored:",this.in_edit,this.restored);
         const state = storage.get("state") ;
         console.log("stored state",state);
 
@@ -1278,12 +1278,12 @@ export class Page { // singleton class
         pot.id = state?.id ?? null
         console.log("page,path,potId",page,this.path,pot.id);
 
-        if ( this.restored ) {
+        if ( this.restored ) { // repeat
             if ( ! this.in_edit ) {
                 console.log("RESTORED",page);
                 this.reshow( page, detail );
             }
-        } else {
+        } else { // first time
             console.log("Just RESOTRE",page);
             this.restored = true ;
             this.show( page, detail ) ;
@@ -1313,13 +1313,13 @@ export class Page { // singleton class
     
     show( page, detail=null ) { // main routine for displaying different "pages" by hiding different elements
         this.in_edit = false ;
-        this.store( page, detail );
         // detail is for extra data to pass on
         if ( settings?.console == "true" ) {
             console.log("SHOW",page,"STATE",this.path);
         }
 
         this.add(page) ; // place in reversal list
+        this.store( page, detail );
 
         // clear display objects
         globalPotData = null;
