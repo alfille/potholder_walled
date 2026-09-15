@@ -1516,6 +1516,7 @@ window.onload = () => {
         const q = new Query();
         q.create( structData.Data.concat(structData.Images) )
         .then( () => thumbs.getAll() ) // create thumbs
+        .then( () => page.restore( true ) ) // update page
         .catch( err => log.err(err,"Query cleanup") )
         ;
 
@@ -1543,11 +1544,10 @@ window.onload = () => {
         ((settings.fullscreen=="always") ?
             document.documentElement.requestFullscreen()
             : Promise.resolve())
-        .finally( _ => page.restore() ) ;
+        .finally( _ => page.restore( false ) ) ;
         
     } else {
-        // bad database usl
-//        window.location.href = globalAddress.get_main().href ;
+        // bad database url
         window.location.href = address.get_main().href ;
     }
 };
@@ -1893,7 +1893,7 @@ class Thumbs {
     }
 
     getAll() {
-        pot.getAllIdDoc()
+        return pot.getAllIdDoc()
         .then( docs => {
             if ( 'requestIdleCallback' in window ) {
                 if ( docs.rows.length > 0 ) {
