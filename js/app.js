@@ -647,13 +647,17 @@ export class DatabaseManager { // convenience class
                 break ;
             case "good":
             default:
-                document.body.style.background="#172bae"; // heppy blue
+                document.body.style.background="#172bae"; // happy blue
                 if ( this.lastState !== state ) {
                     log.err(msg,"Network status");
                 }
                 this._problem = false ;
                 break ;
         }
+        this.status_msg(msg) ;
+    }
+    
+    status_msg( msg ) {
         this.synctext.value = msg ;
     }
             
@@ -1492,14 +1496,14 @@ window.onload = () => {
         Object.assign( storage, s ) ;
     }
     
+    if ( new URL(location.href).searchParams.size > 0 ) {
+        // reload without search params
+        window.location.href = "/index.html" ;
+    }
+
     // set database from URL
     const new_address = address.test_and_store() ;
     database.acquire_and_listen() ; // look for database
-
-    if ( new URL(location.href).searchParams.size > 0 ) {
-        // reload without search params -- placed in Cookies
-        window.location.href = "/index.html" ;
-    }
 
     globalThis.globalResize = new ResizeObserver( entries => entries.forEach( e=> {
         switch (e.target.id) {
@@ -1521,7 +1525,9 @@ window.onload = () => {
         // Secondary indexes (create, prune and clean up views)
         const q = new Query();
         q.create( structData.Data.concat(structData.Images) )
+        .then( () => database.status_msg("Creating thumbnail images..."); )
         .then( () => thumbs.getAll() ) // create thumbs
+        .then( () => database.status_msg("Completed thumbnail images"); )
         .then( () => page.restore() ) // update page
         .catch( err => log.err(err,"Query cleanup") )
         ;
