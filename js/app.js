@@ -492,8 +492,8 @@ export class DatabaseManager { // convenience class
     }
     
     open() { // local
-        const local_db_name = address.database ;
-        if ( local_db_name !== "") ) {
+        const local_db_name = address.database ?? "" ;
+        if ( local_db_name !== "" ) {
             // open local copy
             this.db = new PouchDB( local_db_name, {auto_compaction: true} ) ; 
         }
