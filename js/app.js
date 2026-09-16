@@ -1525,9 +1525,9 @@ window.onload = () => {
         // Secondary indexes (create, prune and clean up views)
         const q = new Query();
         q.create( structData.Data.concat(structData.Images) )
-        .then( () => database.status_msg("Creating thumbnail images..."); )
+        .then( () => database.status_msg("Creating thumbnail images...") )
         .then( () => thumbs.getAll() ) // create thumbs
-        .then( () => database.status_msg("Completed thumbnail images"); )
+        .then( () => database.status_msg("Completed thumbnail images") )
         .then( () => page.restore() ) // update page
         .catch( err => log.err(err,"Query cleanup") )
         ;
