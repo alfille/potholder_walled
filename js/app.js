@@ -529,6 +529,7 @@ export class DatabaseManager { // convenience class
                     .then( user => {
                         console.log("User",user);
                         this.username = user.name ; 
+                        document.getElementById( "userstatus" ).value = this.username;
                         })
                 }
                 return {status:'authenticated'};
@@ -570,8 +571,6 @@ export class DatabaseManager { // convenience class
 
     // Initialise a sync process with the remote server
     foreverSync() {
-        //document.getElementById( "userstatus" ).value = this.username;
-
         if ( this.local==true ) { // local -- no sync
             console.log("local");
             this.status("good","Local database only (no replication)");
