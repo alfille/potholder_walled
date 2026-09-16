@@ -507,7 +507,7 @@ export class DatabaseManager { // convenience class
             console.log("navigator.onLine",navigator.onLine);
             return Promise.resolve({status: 'offline'}) ;
         }
-        console.log("/auth-status");  
+        //console.log("/auth-status");  
         return fetch('/auth-status', {
             method: 'GET',
             credentials: 'include',
@@ -517,7 +517,7 @@ export class DatabaseManager { // convenience class
         .then( result => {
             if ( result.status === 200 || result.status === 204 ) {
                 if ( this.username === null ) {
-                    console.log("/api/me");
+                    //console.log("/api/me");
                     fetch("/api/me", {credentials: 'include'})
                     .then( api_res => {
                         console.log("api/me",api_res);
@@ -1067,7 +1067,6 @@ class ListGroup extends Pagelist {
             new ListBox( text, table ) ;
             thumbs.show() ;
         } else {
-            console.log("LISTMENU");
             page.show("ListMenu");
         }
     }
@@ -1262,9 +1261,9 @@ export class Page { // singleton class
     }
 
     restore() {
-        console.log("RESTORE in_edit restored:",this.in_edit,this.restored);
+        //console.log("RESTORE in_edit restored:",this.in_edit,this.restored);
         const state = storage.get("state") ;
-        console.log("stored state",state);
+        //console.log("stored state",state);
 
         if (state == null) {
             this.reset();
@@ -1276,15 +1275,17 @@ export class Page { // singleton class
             this.path = [] ;
         }
         pot.id = state?.id ?? null
-        console.log("page,path,potId",page,this.path,pot.id);
+        //console.log("page,path,potId",page,this.path,pot.id);
 
         if ( this.restored ) { // repeat
             if ( ! this.in_edit ) {
-                console.log("RESTORED",page);
+                //console.log("RESTORED",page);
                 this.reshow( page, detail );
+            } else {
+                thumbs.replot() ;
             }
         } else { // first time
-            console.log("Just RESOTRE",page);
+            //console.log("Just RESOTRE",page);
             this.restored = true ;
             this.show( page, detail ) ;
         }
@@ -1316,7 +1317,7 @@ export class Page { // singleton class
         // detail is for extra data to pass on
         if ( settings?.console == "true" ) {
             console.log("SHOW",page,"STATE",this.path);
-            console.trace() ;
+            //console.trace() ;
         }
 
         this.add(page) ; // place in reversal list
@@ -1331,8 +1332,8 @@ export class Page { // singleton class
     
     reshow( page, detail=null ) { // re-entry for updated thumbs
         if ( settings?.console == "true" ) {
-            console.log("RESHOW",page,"STATE",this.path);
-            console.trace() ;
+            //console.log("RESHOW",page,"STATE",this.path);
+            //console.trace() ;
         }
         this.show_normal(); // basic page display setup
 
@@ -1478,7 +1479,6 @@ export const settings = Object.assign( {
 // Application starting point
 window.onload = () => {
     // Stuff into history to block browser BACK button
-    console.log("startup");
     window.history.pushState({}, '');
     window.addEventListener('popstate', ()=>window.history.replaceState({}, '') );
 
@@ -1496,8 +1496,6 @@ window.onload = () => {
     }
     
     // set database from URL
-    console.log("Address");
-//    const new_address = globalAddress.test_and_store() ;
     const new_address = address.test_and_store() ;
     database.acquire_and_listen() ; // look for database
 
@@ -1548,7 +1546,6 @@ window.onload = () => {
         .catch( err => log.err(err,"Initial search database") );
 
         // start sync with remote database
-        console.log("Get Remote");
         database.foreverSync();
         
         // Show screen
@@ -1923,7 +1920,6 @@ class Thumbs {
     getOne( pid = pot.id ) {
         return database.db.get( pid )
         .then( doc => this._create(doc) )
-        .then( () => this.replot() )
         .catch( err => log.err(err) );
     }
 
@@ -1943,8 +1939,7 @@ class Thumbs {
                     });
                 } else {
                     // 2. Map rows to _create promises and await them all
-                    return Promise.all(rows.map(r => this._create(r.doc)))
-                        .then(() => this.replot());
+                    return Promise.all(rows.map(r => this._create(r.doc))) ;
                 }
             })
             .catch(err => log.err(err));
@@ -1952,7 +1947,6 @@ class Thumbs {
 
     getAllList(rows) {
         if (!rows || rows.length === 0) {
-            this.replot();
             return Promise.resolve();
         }
 
@@ -1967,9 +1961,6 @@ class Thumbs {
                         resolve(this.getAllList(rows));
                     }, { timeout: 100 });
                 });
-            } else {
-                // 3. Final item completed; trigger replot
-                this.replot();
             }
         });
     }
@@ -1991,7 +1982,7 @@ class Thumbs {
     remove( pid ) {
         if ( pid in this.thumblist ) {
             delete this.thumblist[pid];
-            this.replot() ;
+            page.restore() ;
         }
     }
     
@@ -2192,7 +2183,6 @@ class ThumbTable extends SortTable {
     }
 
     fill( doclist ) {
-        console.log("-----thumb fill-----");
         // typically called with doc.rows from allDocs
         const tbody = this.tbl.querySelector('tbody');
         tbody.innerHTML = "";

@@ -43,7 +43,7 @@ class PotDataRaw { // singleton class
 
         // Create (recursively) objects to mirror the structure
         this.list = new EntryList( struct, this.Images, readonly, img_name ) ;
-        console.log("List",this.list,img_name,this.list.img_name);
+        //console.log("List",this.list,img_name,this.list.img_name);
         
         // Load the objects with doc data 
         this.list.load_from_doc( doc ) ;
@@ -469,7 +469,7 @@ class InvisibleEntry {
     }
     
     load_from_doc( doc ) {
-        console.log("Load",this._name,doc);
+        //console.log("Load",this._name,doc);
         this.initial_val = (this._name in doc) ? doc[this._name] : this.default_value() ;
         const d = `default_${this._name}`
         if ( d in doc ) {
@@ -571,7 +571,7 @@ class VisibleEntry extends InvisibleEntry {
 
 class TextEntry extends VisibleEntry {
     edit_flatten() {
-        console.log("TextEntry",this);
+        //console.log("TextEntry",this);
         // get value and make type-specific input field with filled in value
         this.field = document.createElement( "input" );
         this.field.title = this.struct.hint;
@@ -1063,10 +1063,10 @@ class ImageArrayEntry extends ArrayEntry {
         
     edit_item() {
         // Insert a table, and pull label into caption
-        console.log("edit",this.img_name);
+        //console.log("edit",this.img_name);
         if ( this.img_name ) {
             const idx = this.new_val.findIndex( e => this.find_entry( e, "image" ).new_val == this.img_name ) ;
-            console.log( "Image Array", this.img_name, idx ) ;
+            //console.log( "Image Array", this.img_name, idx ) ;
             this.img_name = null ;
             if ( idx >= 0 ) {
                 this.edit_array_entry( idx ) ;
