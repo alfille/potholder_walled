@@ -306,9 +306,6 @@ export class Pot { // convenience class
 
     unselect() {
         this.id = null;
-//        if ( page.isThis("AllPieces") ) {
-//            const pt = document.getElementById("PotTable");
-//        }
         new BlankBox();
     }
 
@@ -471,7 +468,7 @@ export class DatabaseManager { // convenience class
         // login_name
         this.username = null ;
 
-        this.database = null ;
+        //this.database = null ;
         this.local    = null ;
         
         this._remoteDB = null;
@@ -495,9 +492,10 @@ export class DatabaseManager { // convenience class
     }
     
     open() { // local
-        if ( globalThis.database && (globalThis.database !== "") ) {
+        const local_db_name = address.database ;
+        if ( local_db_name !== "") ) {
             // open local copy
-            this.db = new PouchDB( globalThis.database, {auto_compaction: true} ) ; 
+            this.db = new PouchDB( local_db_name, {auto_compaction: true} ) ; 
         }
     }
 
@@ -520,14 +518,14 @@ export class DatabaseManager { // convenience class
                     //console.log("/api/me");
                     fetch("/api/me", {credentials: 'include'})
                     .then( api_res => {
-                        console.log("api/me",api_res);
+                        //console.log("api/me",api_res);
                         if ( !api_res.ok ) {
                             throw new Error( "Name failed "+api_res.status ) ;
                         }
                         return api_res.json() ;
                         })
                     .then( user => {
-                        console.log("User",user);
+                        //console.log("User",user);
                         this.username = user.name ; 
                         document.getElementById( "userstatus" ).value = this.username;
                         })
