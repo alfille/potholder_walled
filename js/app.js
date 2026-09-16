@@ -654,16 +654,16 @@ export class DatabaseManager { // convenience class
                 this._problem = false ;
                 break ;
         }
-        this.status_msg(msg) ;
+        this.synctext.value = msg ;
     }
     
     status_msg( msg ) {
+        log.err(msg,"Information");
         this.synctext.value = msg ;
     }
             
     // Fauxton link
     fauxton() {
-//        window.open( `${globalAddress.get_fauxton()}`, '_blank' );
         window.open( `${address.get_fauxton()}`, '_blank' );
     }
     
