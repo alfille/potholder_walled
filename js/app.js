@@ -1337,6 +1337,7 @@ export class Page { // singleton class
     } 
     
     show( page, detail=null ) { // main routine for displaying different "pages" by hiding different elements
+        TitleBox.flash() ;
         this.in_edit = false ;
         // detail is for extra data to pass on
         if ( settings?.console == "true" ) {
