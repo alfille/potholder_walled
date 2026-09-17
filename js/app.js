@@ -220,6 +220,17 @@ globalThis.structSettings = [
     }
 ] ;
 
+// Request persistent storage early
+if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then(granted => {
+        if (granted) {
+            console.log("[Storage] Storage quota expanded to persistent mode.");
+        } else {
+            console.warn("[Storage] Storage remains in default/best-effort mode.");
+        }
+    });
+}
+
 // singleton class instances
 //globalThis. globalAddress  = null ;
 //globalThis. crop  = null ;
