@@ -932,7 +932,6 @@ export class Storage { //convenience class
         catch {
             ls_parsed = ls ;
         }
-        //globalThis[cname] = ls_parsed;
         return ls_parsed ;
     }
     
@@ -947,15 +946,12 @@ new class MakeQR extends Pagelist {
         new StatBox() ;
         document.getElementById("URLtitle").innerText = "Web Link" ;
         new QRious( {
-//            value: globalAddress.bare_url.href,
             value: address.bare_url.href,
             element: document.getElementById("qr"),
             size: 300,
         });
-//        document.getElementById("MakeURLtext").href = globalAddress.bare_url.href ;
         document.getElementById("MakeURLtext").href = address.bare_url.href ;
         document.getElementById("CopyURLtext").onclick = () => {
-//            navigator.clipboard.writeText( globalAddress.bare_url.toString() )
             navigator.clipboard.writeText( address.bare_url.toString() )
             .catch( err => log.err(err) );
             } ;
@@ -2431,7 +2427,7 @@ class MultiTable {
 class AssignTable extends ThumbTable {
     constructor(
         column_list=["type","series","start_date" ],
-        tableId="AssignPic",
+        tableId="AssignPicTable",
         column_aliases=
             [
                 ["Thumbnail","Picture", (doc)=> `${doc.artist}`],
@@ -2448,7 +2444,7 @@ class SearchTable extends ThumbTable {
     constructor() {
         super( 
         ["Field","Text"], 
-        "SearchList"
+        "SearchListTable"
         );
     }
 
