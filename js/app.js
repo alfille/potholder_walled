@@ -1539,12 +1539,32 @@ window.onload = () => {
             include_docs: false 
             })
         .on('change', (change) => {
+            console.log('[Sync] Change processed:', change);
             if ( change?.deleted ) {
                 thumbs.remove( change.id ) ;
             } else {
                 thumbs.getOne( change.id )
                 .then( () => page.restore() ) ;
             }
+            })
+        .on('paused', function (err) {
+                // Replication paused (e.g., waiting for new changes or offline)
+                if (err) {
+                    console.warn('[Sync] Paused due to error:', err);
+                } else {
+                    console.log('[Sync] Up to date, waiting for changes...');
+                }
+            })
+    .   on('active', function () {
+            console.log('[Sync] Resumed / Active');
+            })
+        .on('denied', function (err) {
+            // Document failed to replicate due to permissions (e.g., security object)
+            console.error('[Sync] Permission denied for document:', err);
+            })
+        .on('error', function (err) {
+            // Unhandled replication error (e.g., HTTP 401/403/500 or network drop)
+            console.error('[Sync] Fatal sync error:', err);
             })
         .catch( err => log.err(err,"Initial search database") );
 
