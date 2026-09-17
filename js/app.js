@@ -1528,7 +1528,8 @@ window.onload = () => {
     }) ) ; 
 
     // Start pouchdb database
-    database.open() ;       
+    database.open() ;  
+    const titleBox = document.getElementById("titlebox") ;     
     if ( database.db ) {
         // Thumbnails
         thumbs.setup() ; // just getting canvas from doc
@@ -1550,7 +1551,9 @@ window.onload = () => {
             include_docs: false 
             })
         .on('change', (change) => {
-            console.log('[Sync] Change processed:', change);
+            titleBox.classList.remove("flash-once");
+            void titleBox.offsetWidth;
+            titleBox.classList.add("flash-once");
             if ( change?.deleted ) {
                 thumbs.remove( change.id ) ;
             } else {
