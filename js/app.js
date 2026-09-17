@@ -1911,23 +1911,42 @@ class Thumbs {
                     t_img.onload = () => {
                         URL.revokeObjectURL(url);
 
-                        let crop = doc.images[0]?.crop;
-                        if (!crop || crop.length !== 4) {
-                            crop = [0, 0, t_img.naturalWidth, t_img.naturalHeight];
+                        try {
+                            let crop = doc.images[0]?.crop;
+                            if (!crop || crop.length !== 4) {
+                                crop = [0, 0, t_img.naturalWidth, t_img.naturalHeight];
+                            }
+
+                            // sw/sh in canvas units
+                            const [iw, ih] = rightSize(this.canvas.width, this.canvas.height, crop[2], crop[3]);
+
+                            // center and crop to maintain 1:1 aspect ratio
+                            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                            this.ctx.drawImage(
+                                t_img, 
+                                crop[0] + (crop[2] - iw) / 2, 
+                                crop[1] + (crop[3] - ih) / 2, 
+                                iw, 
+                                ih, 
+                                0, 
+                                0, 
+                                this.canvas.width, 
+                                this.canvas.height
+                            );
+
+                            // 3. Wrap canvas.toBlob in a Promise to resolve when finished
+                            this.canvas.toBlob((blob) => {
+                                if (blob) {
+                                    this.thumblist[pid] = blob;
+                                }
+                                resolve(blob);
+                            });
+                        } catch (renderErr) {
+                            // Log rendering error (e.g. tainted canvas or invalid dimensions)
+                            // and resolve with null so callers/loops can continue safely
+                            log.err(`Canvas render error on doc ${pid}:`, renderErr);
+                            resolve(null);
                         }
-
-                        // sw/sh in canvas units
-                        const [iw, ih] = rightSize(this.canvas.width, this.canvas.height, crop[2], crop[3]);
-
-                        // center and crop to maintain 1:1 aspect ratio
-                        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                        this.ctx.drawImage(t_img, crop[0] + (crop[2] - iw) / 2, crop[1] + (crop[3] - ih) / 2, iw, ih, 0, 0, this.canvas.width, this.canvas.height);
-
-                        // 3. Wrap canvas.toBlob in a Promise to resolve when finished
-                        this.canvas.toBlob((blob) => {
-                            this.thumblist[pid] = blob;
-                            resolve(blob);
-                        });
                     };
 
                     t_img.src = url;
@@ -1935,8 +1954,6 @@ class Thumbs {
             })
             .catch(err => {
                 log.err(err);
-                // Re-throw if you want callers to catch failures, 
-                // or leave it swallowed to resolve as undefined on error
             });
     }
 
