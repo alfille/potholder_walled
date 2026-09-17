@@ -1,155 +1,164 @@
-html, body {
+/* ==========================================================================
+   1. Base & Reset Styles
+   ========================================================================== */
+html,
+body {
   margin: 0;
   padding: 0;
 }
-#master_grid {
-    display: grid ;
-    grid-template-columns: min(100%, 550px) auto;
-    grid-template-areas: "top           side  " 
-                         "potholderbody side  " 
-                         "Foot          side  " 
-                         "bottom        bottom";
-}
-#top {
-    grid-area: top;
-}
-#Side {
-    grid-area: side;
-}
-#potholderbody {
-    grid-area: potholderbody;
-    background: #949ddf;
-    margin: 0 0 0 0;
-    border: 1px solid #ccc;
-    position: relative;
-    border-top-left-radius: 2px;
-    border-top-right-radius: 2px;
-	align-items: flex-start;
-}
-#Foot {
-    grid-area: Foot;
-    display: flex;
-    color: white;
-    flex-flow: row nowrap;
-    justify-content: space-around;
-    overflow: hidden;
-    white-space: nowrap;
-    text-align: center;
-    font-size: 12px;
-}
-#Bottom {
-    grid-area: bottom;
-}
-#Side, #Bottom {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: flex-start;  
-	align-content: flex-end;
-	align-items: flex-start;
+
+body {
+  font: 16px 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  line-height: 1.4em;
+  background-color: #172bae;
+  color: #250f0f;
+  width: 100%;
+  margin: 0 auto;
+  font-smoothing: antialiased;
 }
 
+/* ==========================================================================
+   2. Master Layout Grid
+   ========================================================================== */
+#master_grid {
+  display: grid;
+  grid-template-columns: min(100%, 550px) auto;
+  grid-template-areas:
+    "top          side"
+    "potholderbody side"
+    "Foot         side"
+    "bottom       bottom";
+}
+
+#top {
+  grid-area: top;
+}
+
+#potholderbody {
+  grid-area: potholderbody;
+  background-color: #949ddf;
+  margin: 0;
+  border: 1px solid #ccc;
+  position: relative;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  align-items: flex-start;
+}
+
+#Foot {
+  grid-area: Foot;
+  display: flex;
+  color: #ffffff;
+  flex-flow: row nowrap;
+  justify-content: space-around;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 12px;
+}
+
+#Side {
+  grid-area: side;
+}
+
+#Bottom {
+  grid-area: bottom;
+}
+
+#Side,
+#Bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-content: flex-end;
+  align-items: flex-start;
+}
+
+/* ==========================================================================
+   3. Header & Title Box Components
+   ========================================================================== */
 #headerbox {
-	display: flex;
-	position: relative;
-	justify-content: space-between;
-	top: 0;
-	left: 0;
-	width: 100%;
-	background: inherit;
+  display: flex;
+  position: relative;
+  justify-content: space-between;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: inherit;
 }
+
 .headerboxlink img {
-	color: blue ;
-	border-style: groove;
-	border-width: 4px;
-	border-color: lightblue;
-	margin: 2px 0 2px 2px;
+  color: #0000ff;
+  border: 4px groove lightblue;
+  margin: 2px 0 2px 2px;
 }
+
 #titlebox {
-	width: calc( 100% - 4px);
-	background-color: #D5CCFF;
-	color: black ;
-	height: 1em;
-	text-align: center;
-	padding: 3px 3px 8px 3px;
+  width: calc(100% - 4px);
+  background-color: #d5ccff;
+  color: #000000;
+  height: 1em;
+  text-align: center;
+  padding: 3px 3px 8px 3px;
 }
-/* Define the single-flash keyframes */
+
+/* Titlebox Single-Flash Animation */
 @keyframes single-flash {
-    0% {
-        background-color: #D5CCFF; /* Starting color */
-    }
-    50% {
-        background-color: yellow; /* Peak flash (Red) */
-    }
-    100% {
-        background-color: #D5CCFF; /* Ending color (Blue) */
-    }
+  0% {
+    background-color: #d5ccff;
+  }
+  50% {
+    background-color: #ffff00;
+  }
+  100% {
+    background-color: #d5ccff;
+  }
 }
-/* Class to trigger the flash */
+
 .flash-once {
-    /* 0.6s total duration, runs 1 time, leaves element at 100% keyframe state */
-    animation: single-flash 0.5s ease-in-out !important ;
+  animation: single-flash 0.5s ease-in-out !important;
 }
-.allGroup {
-  background-color: #edf6af;
-}
+
+/* ==========================================================================
+   4. Tables & Lists
+   ========================================================================== */
 table {
   border-collapse: collapse;
-  width: 100% ;
+  width: 100%;
 }
-th, td {
-  border: 1px solid black;
+
+th,
+td {
+  border: 1px solid #000000;
   padding: 4px;
 }
+
 th {
   cursor: pointer;
 }
-th:hover {
-  background:  yellow;
+
+th:hover,
+tr:hover,
+tr:nth-child(odd):hover,
+li:nth-child(even):hover {
+  background-color: lightyellow;
 }
-tr.head {
-  background: #CCFFFF ;
-}
-tr:hover {
-  background: lightyellow ;
-}
+
 tr {
-  background: #CCCCFF ;
+  background-color: #ccccff;
   min-height: 1em;
 }
-li {
-  background: #9edaa0 ;
-  min-height: 1em;
+
+tr.head {
+  background-color: #ccffff;
 }
-tr:nth-child(odd), li:nth-child(odd) {
+
+tr:nth-child(odd),
+li:nth-child(odd) {
   margin: 4px 0 0 0;
-  border-style: double none none none ;
+  border-style: double none none none;
   padding: 4px 0 0 0;
-  background: #E6F2FF ;
-}
-tr:nth-child(odd):hover, li:nth-child(even):hover {
-  background: lightyellow ;
-}
-.print_screen {
-    color: white;
-}
-
-.PotData li {
-  background: #E6F2FF ;
-  margin: 0 0 0 0;
-  border-style: double none none none ;
-  padding: 4px;
-}
-
-.PotData li:nth-child(odd) {
-  background: #CCCCFF ;
-}
-
-#ErrorLogContent li {
-  background: #c7G.db3a;
-}
-
-#ErrorLogContent li:nth-child(even) {
-  background: #ebff53;
+  background-color: #e6f2ff;
 }
 
 ul {
@@ -159,95 +168,185 @@ ul {
   overflow: auto;
 }
 
-.divbutton, a {
+li {
+  background-color: #9edaa0;
+  min-height: 1em;
+}
+
+/* Specific List Variants */
+.PotData li {
+  background-color: #e6f2ff;
+  margin: 0;
+  border-style: double none none none;
+  padding: 4px;
+}
+
+.PotData li:nth-child(odd) {
+  background-color: #ccccff;
+}
+
+#ErrorLogContent li {
+  background-color: #c7db3a; /* Fixed invalid hex */
+}
+
+#ErrorLogContent li:nth-child(even) {
+  background-color: #ebff53;
+}
+
+/* ==========================================================================
+   5. Buttons & Controls
+   ========================================================================== */
+.divbutton,
+a {
   margin: 1px;
   padding: 3px;
-  border: 3px;
+  border: 3px groove;
   display: inline-block;
-  background: #3366FF;
+  background-color: #3366ff;
   font-size: 18px;
   vertical-align: baseline;
   font-family: inherit;
-  color: white;
-  border-style: groove ;
-  -webkit-appearance: none;
-  /*-moz-appearance: none;*/
-  -ms-appearance: none;
-  -o-appearance: none;
+  color: #ffffff;
   appearance: none;
 }
+
 .divbutton:disabled {
-  color: grey;
-  background: #9eb6ff ;
+  color: #808080;
+  background-color: #9eb6ff;
 }
-.divbutton:hover, a:hover {
-  color: yellow;
+
+.divbutton:hover,
+a:hover {
+  color: #ffff00;
+}
+
+.edit_data,
+.search {
+  display: inline-block;
+  background-color: #ffff00;
+  color: #000000;
+  border: 1px solid #ff0000;
+  margin: 1px 3px 1px 1px;
+}
+
+.edit_data:disabled {
+  background-color: #ffffcc;
+  color: #808080;
+}
+
+.return {
+  background-color: #008000;
+}
+
+.delete {
+  background-color: #b00505 !important;
+  float: right;
 }
 
 .NewCamera {
-  color: black;
-  background: #3cebcd;
-}
-.Camera {
-  background: purple;
+  color: #000000;
+  background-color: #3cebcd;
 }
 
-.ContentTitle {
-  display: block;
-  text-align: center;
+.Camera {
+  background-color: #800080;
+}
+
+/* ==========================================================================
+   6. Search & Navigation Components
+   ========================================================================== */
+#searchbar {
+  background-color: #00008b;
+  width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+#searchtext {
+  background-color: #ffffff;
   font-size: 2em;
-  color: white;
-  padding: 4px;
+  flex-grow: 1;
 }
-.click_pic {
-  cursor: pointer;
-  transition: 0.3s;
+
+#searchclick {
+  float: right;
+  color: #000000;
   display: inline-block;
-  border-radius: 5px;
+  background-color: #ffff00;
+  flex-grow: 0;
 }
+
+.MainMenuRow {
+  display: flex;
+  color: #ffffff;
+  background-color: inherit;
+  padding-top: 5px;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.MainBold {
+  font-weight: bold;
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+.MainItalic {
+  font-style: italic;
+  color: #ffffff;
+}
+
+.buttonmenu {
+  display: flex;
+  background-color: #bcbce9;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+  padding: 1em 0;
+}
+
+/* ==========================================================================
+   7. Modals & Canvas Overlay
+   ========================================================================== */
 #crop_page {
-  display: none; /* Hidden by default */
-/*  position: fixed; /* Stay in place */
-/*  z-index: 1; /* Sit on top */
-/*  left: 0px;
-/*  top: 0px;
-/*  width: 100%; /* Full width */
-/*  height: 100%; /* Full height */
-  background-color: rgb(23,43,174);
+  display: none;
+  background-color: rgb(23, 43, 174);
 }
-#under_canvas, #crop_canvas {
+
+#under_canvas,
+#crop_canvas {
   position: absolute;
   display: block;
-  top: 0px;
-  left: 0px;
+  top: 0;
+  left: 0;
 }
+
 #crop_buttons {
-  color: white;
+  color: #ffffff;
   position: absolute;
   top: 605px;
   left: 20px;
 }
-/* The Modal (background) */
+
 .modal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
-  padding-top: 75px; /* Location of the box */
+  display: none;
+  position: fixed;
+  z-index: 1;
+  padding-top: 75px;
   left: 0;
   top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(23,43,174);
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(23, 43, 174);
 }
 
-/* Modal Content (image) */
 .modal_content {
   margin: auto;
   display: block;
 }
 
-/* Caption of Modal Image */
 #modal_caption {
   margin: auto;
   display: block;
@@ -259,24 +358,34 @@ ul {
   height: 100px;
 }
 
-/* Add Animation */
-.modal_content, #modal_caption {  
+.modal_content,
+#modal_caption {
   animation-name: zoom;
   animation-duration: 0.6s;
 }
 
 @keyframes zoom {
-  from {transform: scale(0.1)} 
-  to {transform: scale(1)}
+  from {
+    transform: scale(0.1);
+  }
+  to {
+    transform: scale(1);
+  }
 }
 
-/* The Close Button */
 .modal_button {
-  color: white;
+  color: #ffffff;
   font-size: 40px;
   font-weight: bold;
   transition: 0.3s;
-  background-color: rgba(0,0,0,0);
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.modal_button:hover,
+.modal_button:focus {
+  color: #bbb;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 #modal_close {
@@ -290,34 +399,121 @@ ul {
   top: 5px;
   left: 35px;
 }
+
 #modal_edit {
   position: absolute;
   top: 5px;
   left: 85px;
 }
 
-.modal_button:hover,
-.modal_button:focus {
-  color: #bbb;
-  text-decoration: none;
-  cursor: pointer;
+/* ==========================================================================
+   8. Pot Data & Dynamic Array Views
+   ========================================================================== */
+.PotDataContent {
+  width: 100%;
 }
-#InvalidPotContent button, #splash_screen {
+
+.PotData input {
+  background-color: #f6f6f6;
+}
+
+.PotData textarea {
+  background-color: #f6f6f6;
+  vertical-align: top;
+}
+
+.PotProcButtons {
+  display: flex;
+  flex-direction: column;
+}
+
+.Darray_table {
+  border: 3px solid #000000;
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  margin-left: 4px;
+}
+
+.Darray_div {
+  justify-content: space-between;
+  flex-flow: row wrap;
+}
+
+.Darray_caption {
+  font-size: 1.5em;
+  background-color: lightblue;
+  padding-top: 10px;
+}
+
+.Darray_li1 {
+  font-size: 1.5em;
+}
+
+.Darray_caption button,
+.Darray_div button {
+  font-size: 0.8em;
+  margin: 1px;
+  padding: 3px;
+  border: 3px groove;
+  background-color: #3366ff;
+  vertical-align: baseline;
+  font-family: inherit;
+  color: #ffffff;
+}
+
+.Darray_up,
+.Darray_down {
+  background-color: #0000ff;
+  color: #ffffff;
+}
+
+.Darray_up:hover,
+.Darray_down:hover {
+  background-color: #ffffff;
+  color: #0000ff;
+}
+
+/* ==========================================================================
+   9. Miscellaneous & Utilities
+   ========================================================================== */
+.allGroup {
+  background-color: #edf6af;
+}
+
+.print_screen,
+.ContentTitle {
+  color: #ffffff;
+}
+
+.ContentTitle {
+  display: block;
   text-align: center;
+  font-size: 2em;
+  padding: 4px;
 }
-.multiCat, .fill_show_data {
+
+.click_pic {
+  cursor: pointer;
+  transition: 0.3s;
+  display: inline-block;
+  border-radius: 5px;
+}
+
+.multiCat,
+.fill_show_data {
   font-weight: bold;
-  color: black;
+  color: #000000;
   display: inline-block;
 }
-    
+
 .fill_show_label {
-  font-weight: italic;
-  color: black;
+  font-style: italic; /* Fixed invalid font-weight: italic */
+  color: #000000;
   display: inline-block;
   text-align: left;
 }
-    
+
 .yearnumber {
   font-weight: normal;
   display: inline-block;
@@ -326,68 +522,29 @@ ul {
 .MultiFieldset {
   background-color: #949ddf;
 }
-    
-body {
-  font: 16px 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  line-height: 1.4em;
-  background: #172bae;
-  color: #250f0f;
-  width: 100%;
-  margin: 0 auto;
-  -webkit-font-smoothing: antialiased;
-  -moz-font-smoothing: antialiased;
-  -ms-font-smoothing: antialiased;
-  -o-font-smoothing: antialiased;
-  font-smoothing: antialiased;
+
+.pageOverlay,
+.imageBar,
+.work_screen {
+  display: none;
 }
 
 .pageOverlay {
-  display: none ;
-  width: 100% ;
+  width: 100%;
 }
 
-.imageBar {
-  display:none;
-}
-.edit_data, .search {
-  display: inline-block;
-  background: yellow;
-  color: black;
-  border: 1px solid red;
-  margin: 1px 3px 1px 1px ;
-}
-.edit_data:disabled {
-  background: #ffffcc;
-  color: grey;
-}
-.return {
-  background: green;
-}
-.delete {
-  background: #b00505 !important;
-  float: right;
-}
-#searchbar {
-    background: "darkblue";
-    width: 100%;
-    display: flex;
-    flex-wrap: nowrap;
-}
-#searchtext {
-    background: white;
-    font-size: 2em;
-    flex-grow: 1;
-}
-#searchclick {
-  float: right ;
-  color: black ;
-  display: inline-block;
-  background: yellow;
-  flex-grow: 0;
-}
 #splash_screen {
-  display: block ;
-  background: #3366CC;
+  display: block;
+  background-color: #3366cc;
+  text-align: center;
+}
+
+#InvalidPotContent button {
+  text-align: center;
+}
+
+#InvalidPotContent {
+  padding: 5px;
 }
 
 legend {
@@ -396,153 +553,70 @@ legend {
   font-weight: bold;
 }
 
-.buttonmenu {
-  display: flex ;
-  background: #bcbce9 ;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column ;
-  width: 100%;
-  padding: 1em 0em 1em 0em;
-}
-.PotDataContent {
-    width: 100%;
-}
-
-.Darray_table {
-  border: 3px solid black;
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  margin-left: 4px;
-}
-.Darray_div {
-  justify-content: space-between;
-  flex-flow: row wrap;
-}
-.Darray_caption {
-  font-size: 1.5em;
-  background: lightblue;
-  padding-top: 10px;
-}
-.Darray_li1 {
-  font-size: 1.5em ;
-}
-.Darray_caption button, .Darray_div button {
-  font-size: .8em;
-  margin: 1px;
-  padding: 3px;
-  border: 3px;
-  background: #3366FF;
-  vertical-align: baseline;
-  font-family: inherit;
-  color: white;
-  border-style: groove ;
-}
-.Darray_up, .Darray_down {
-  background-color: blue;
-  color: white;
-}
-.Darray_up:hover, .Darray_down:hover {
-  background-color: white;
-  color: blue;
-}
 #FirstTimeContent p {
   margin-left: 5px;
   margin-right: 5px;
 }
-.MainMenuRow{
-  display: flex;
-  color: white;
-  background: inherit;
-  padding-top: 5px;
-  flex-direction: row ;
-  justify-content: space-around;
-}
-.MainBold {
-  font-weight: bold;
-  padding-left: 1em;
-  padding-right: 1em;
-}
-.MainItalic {
-  font-style: italic;
-  color: white;
-}
+
 .ThumbPhoto {
   content-visibility: auto;
   contain-intrinsic-size: auto 100px;
-  border: 1px solid white;
-  margin:  2px;
-}
-/*
-#TopLeftImage {
-  width: 100px;
-  height: 100px;
-  }
-*/
-.PotProcButtons {
-  display: flex;
-  flex-direction: column;
-}
-#InvalidPotContent {
-    padding: 5px ;
-}
-.PotData input {
-    background: #F6F6F6 ;
-    size: 35 ;
-}
-.PotData textarea {
-    background: #F6F6F6 ;
-    vertical-align: top;
-    rows: 3;
-    cols: 35;
-}
-.work_screen {
-    display: none ;
+  border: 1px solid #ffffff;
+  margin: 2px;
 }
 
+#syncstatus,
+#userstatus {
+  background-color: lightblue;
+  border-width: 4px;
+  width: 8em;
+}
+
+.potholderLogo {
+  max-height: 100px;
+  width: auto;
+}
+
+.splashImg {
+  height: 400px;
+  width: auto;
+}
+
+#struct_json {
+  color: #ffffff;
+  background-color: #000000;
+  padding: 1em;
+  tab-size: 4;
+}
+
+/* ==========================================================================
+   10. Media Queries
+   ========================================================================== */
 @media screen and (min-width: 712px) {
-.content_box {
+  .content_box {
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
     justify-content: flex-start;
+  }
 }
 
 @media screen and (max-height: 500px) {
-.MainMenuRow {
-    flex:1;
-    }
-.content_box {
+  .MainMenuRow {
+    flex: 1;
+  }
+
+  .content_box {
     display: flex;
     width: 100%;
     flex-direction: row;
     justify-content: space-around;
-    }
-#crop_buttons {
-  color: white;
-  position: absolute;
-  top: calc(100%-50px);
-  left: 20px;
-}
-}
+  }
 
-#syncstatus, #userstatus {
-  background: lightblue;
-  border: 4px;
-  width: 8em;
-}
-.potholderLogo {
-  max-height:100px;
-  width:auto;
-}
-.splashImg {
-  height:400px;
-  width:auto;
-}
-#struct_json {
-  color: white;
-  background: black;
-  padding: 1em;
-  tab-size: 4;
+  #crop_buttons {
+    color: #ffffff;
+    position: absolute;
+    top: calc(100% - 50px);
+    left: 20px;
+  }
 }
