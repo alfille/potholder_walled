@@ -597,8 +597,7 @@ export class DatabaseManager { // convenience class
                 return;
             }
             
-            console.log("remote setup");
-//            this._remoteDB = new PouchDB( globalAddress.database_url.href, {
+            // open remote database
             this._remoteDB = new PouchDB( address.database_url.href, {
                 "skip_setup": "true",
                 fetch: (url, opts) => {
@@ -615,18 +614,35 @@ export class DatabaseManager { // convenience class
                         return fetch_res; // still return it — let PouchDB's own error handling proceed too
                     });
                 }
-            });            
+            });
+            
+            // start replication to match data local and remote            
             if ( this._remoteDB ) {
-                this.status( "good","download remote database");
-                this.db.replicate.from( this._remoteDB )
-                    .catch( (err) => this.status("problem",`Replication from remote error ${err.message}`) )
-                    .finally( _ => this.syncer() );
+                this.get_remote_data()
+                .then( info => this.status( "good", "Initial replication complete" ) )
+                .catch( (err) => this.status("problem",`Replication from remote error ${err.message}`) )
+                .finally( _ => this.syncer() );
             } else {
                 this.status("problem","No remote database specified!");
             }
         }) ;
     }
     
+    // initial replication to get data remote -> local
+    get_remote_data() {
+        return new Promise((resolve,reject) => {
+            this.db.replicate.from( this._remoteDB, {
+                live: false,
+                retry: true,
+                batch_size: 25,
+                } )
+                .on('change', ()=> TitleBox.flash() )
+                .on('complete', resolve )
+                .on('error', reject ) ;
+            }) ;
+    }
+        
+    // continuous bidirectional local <-> remove
     syncer() {
         this.status("good","Starting database intermittent sync");
         database.db.sync( this._remoteDB ,
@@ -635,7 +651,7 @@ export class DatabaseManager { // convenience class
                 retry: true,
                 filter: (doc) => doc._id.indexOf('_design') !== 0,
             } )
-            .on('change', ()       => this.status( "good", "changed" ))
+            .on('change', ()       => { TitleBox.flash() ; this.status( "good", "changed" ); })
             .on('paused', ()       => this.status( "good", "quiescent" ))
             .on('active', ()       => this.status( "good", "actively syncing" ))
             .on('denied', ()       => this.status( "problem", "Credentials or database incorrect" ))
