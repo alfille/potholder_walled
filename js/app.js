@@ -630,18 +630,30 @@ export class DatabaseManager { // convenience class
     
     // initial replication to get data remote -> local
     get_remote_data() {
-        return new Promise((resolve,reject) => {
-            this.db.replicate.from( this._remoteDB, {
+        return new Promise((resolve, reject) => {
+            this.status("good", "Starting replication");
+
+            this.db.replicate.from(this._remoteDB, {
                 live: false,
                 retry: true,
                 batch_size: 25,
-                } )
-                .on('change', ()=> TitleBox.flash() )
-                .on('complete', resolve )
-                .on('error', reject ) ;
-            }) ;
-    }
-        
+            })
+            .on('change', (info) => {
+                TitleBox.flash();
+                this.status("good", `Replication progress: ${info.docs_written} docs transferred`);
+            })
+            .on('complete', (info) => {
+                TitleBox.flash();
+                this.status("good", `Replication complete (${info.docs_written} docs imported)`);
+                resolve(info);
+            })
+            .on('error', (err) => {
+                this.status("bad", `Replication failed: ${err.message || err}`);
+                reject(err);
+            });
+        });
+    }      
+
     // continuous bidirectional local <-> remove
     syncer() {
         this.status("good","Starting database intermittent sync");
