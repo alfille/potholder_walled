@@ -1551,6 +1551,7 @@ window.onload = () => {
             include_docs: false 
             })
         .on('change', (change) => {
+            console.log("FLQAASH");
             titleBox.classList.remove("flash-once");
             void titleBox.offsetWidth;
             titleBox.classList.add("flash-once");
