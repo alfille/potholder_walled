@@ -1178,7 +1178,13 @@ class ImageArrayEntry extends ArrayEntry {
         cloneClass( ".Darray_li", control_li ) ;
         control_li.querySelector("span").innerHTML=`<i>Edit Image</i>`;
         control_li.classList.add("Darray_li1");
-        [".Darray_ok",".Darray_crop",".Darray_cancel",".Darray_delete"].forEach(c=>control_li.querySelector(c).hidden=false);
+        [".Darray_ok",".Darray_crop",".Darray_cancel",".Darray_delete"].forEach(c=>{
+            const s = control_li.querySelector(c) ;
+            if (s) {
+                s.hidden=false
+            } else {
+                console.log("Missing selector",c);
+            });
         control_li.querySelector(".Darray_ok").onclick=()=>{
             local_list.save_enable() ;
             this.enclosing.edit_doc() ;
