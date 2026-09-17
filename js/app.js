@@ -192,7 +192,7 @@ globalThis.structDatabaseInfo = [
     {
         name:  "auto_compaction",
         alias: "Automatic compaction",
-        hint:  "Database compaction done automaticslly?",
+        hint:  "Database compaction done automatically?",
         type:  "text",
     },
 ];
@@ -214,7 +214,7 @@ globalThis.structSettings = [
     {
         name: "fullscreen",
         alias: "Display full screen",
-        hint: "Hide browser meniu choices",
+        hint: "Hide browser menu choices",
         type: "radio",
         choices: ["never","big_picture","always"],
     }
@@ -525,25 +525,22 @@ export class DatabaseManager { // convenience class
             })
         .then( result => {
             if ( result.status === 200 || result.status === 204 ) {
-                if ( this.username === null ) {
-                    //console.log("/api/me");
-                    fetch("/api/me", {credentials: 'include'})
-                    .then( api_res => {
-                        //console.log("api/me",api_res);
-                        if ( !api_res.ok ) {
-                            throw new Error( "Name failed "+api_res.status ) ;
+                if (this.username === null) {
+                    return fetch("/api/me", { credentials: 'include' })
+                    .then(api_res => {
+                        if (!api_res.ok) {
+                            throw new Error("Name failed " + api_res.status);
                         }
-                        return api_res.json() ;
+                        return api_res.json();
                         })
-                    .then( user => {
-                        //console.log("User",user);
-                        this.username = user.name ; 
-                        document.getElementById( "userstatus" ).value = this.username;
-                        })
+                    .then(user => {
+                        this.username = user.name;
+                        document.getElementById("userstatus").value = this.username;
+                        return { status: 'authenticated' };
+                        });
                 }
                 return {status:'authenticated'};
             } else {
-                //window.location.href = globalAddress.get_auth() ;
                 return {status: 'unauthenticated'} ;
             }
             })
@@ -619,7 +616,7 @@ export class DatabaseManager { // convenience class
             // start replication to match data local and remote            
             if ( this._remoteDB ) {
                 this.get_remote_data()
-                .then( info => this.status( "good", "Initial replication complete" ) )
+                .then( info => this.status( "good", "Initial download finished" ) )
                 .catch( (err) => this.status("problem",`Replication from remote error ${err.message}`) )
                 .finally( _ => this.syncer() );
             } else {
@@ -636,7 +633,7 @@ export class DatabaseManager { // convenience class
             this.db.replicate.from(this._remoteDB, {
                 live: false,
                 retry: true,
-                batch_size: 25,
+                batch_size: 10,
             })
             .on('change', (info) => {
                 TitleBox.flash();
@@ -654,7 +651,7 @@ export class DatabaseManager { // convenience class
         });
     }      
 
-    // continuous bidirectional local <-> remove
+    // continuous bidirectional local <-> remote
     syncer() {
         this.status("good","Starting database intermittent sync");
         database.db.sync( this._remoteDB ,
@@ -1529,7 +1526,7 @@ window.onload = () => {
     // settings from storage (if there)
     const s = storage.get( "settings" ) ;
     if (s) {
-        Object.assign( storage, s ) ;
+        Object.assign( settings, s ) ;
     }
     
     if ( new URL(location.href).searchParams.size > 0 ) {
@@ -1572,37 +1569,22 @@ window.onload = () => {
         database.db.changes({ 
             since: 'now', 
             live: true, 
-            include_docs: false 
-            })
+            include_docs: true 
+        })
         .on('change', (change) => {
-            TitleBox.flash() ;
-            if ( change?.deleted ) {
-                thumbs.remove( change.id ) ;
+            TitleBox.flash();
+
+            if (change?.deleted) {
+                thumbs.remove(change.id);
             } else {
-                thumbs.getOne( change.id )
-                .then( () => page.restore() ) ;
+                // If include_docs is true, change.doc is directly available
+                thumbs.getOne(change.doc || change.id)
+                    .then(() => page.restore());
             }
             })
-        .on('paused', function (err) {
-                // Replication paused (e.g., waiting for new changes or offline)
-                if (err) {
-                    console.warn('[Sync] Paused due to error:', err);
-                } else {
-                    console.log('[Sync] Up to date, waiting for changes...');
-                }
-            })
-    .   on('active', function () {
-            console.log('[Sync] Resumed / Active');
-            })
-        .on('denied', function (err) {
-            // Document failed to replicate due to permissions (e.g., security object)
-            console.error('[Sync] Permission denied for document:', err);
-            })
-        .on('error', function (err) {
-            // Unhandled replication error (e.g., HTTP 401/403/500 or network drop)
-            console.error('[Sync] Fatal sync error:', err);
-            })
-        .catch( err => log.err(err,"Initial search database") );
+        .on('error', (err) => {
+            log.err(err, "Local changes feed error");
+            });
 
         // start sync with remote database
         database.foreverSync();
@@ -1769,111 +1751,89 @@ class PotImages {
         .then( data => URL.createObjectURL(data) ) ;
     }
     
-    displayClickable( img_name, pic_size="small_pic", new_crop=null, editable=true ) {
-        const img = new Image() ;
+    displayClickable(img_name, pic_size = "small_pic", new_crop = null, editable = true) {
+        const img = new Image();
         const canvas = document.createElement("canvas");
-        switch ( pic_size ) {
-            case "small_pic":
-                canvas.width = 60 ;
-                break;
-            default:
-                canvas.width = 120 ;
-                break ;
-        }
-        canvas.classList.add("click_pic") ;
-        let crop = [] ;
-        this.getURL( img_name )
-        .then( url => {
-            img.onload = () => {
-                URL.revokeObjectURL(url) ;
-                crop = new_crop ;
-                if ( !crop || crop.length!=4 ) {
-                    crop = this.images.find( i => i.image==img_name)?.crop ?? null ;
-                }
-                if ( !crop || crop.length!=4 ) {
-                    crop = [0,0,img.naturalWidth,img.naturalHeight] ;
-                }
-                const h = canvas.width * crop[3] / crop[2] ;
-                canvas.height = h ;
-                canvas.getContext("2d").drawImage( img, crop[0], crop[1], crop[2], crop[3], 0, 0, canvas.width, h ) ;
-                } ;
-            canvas.onclick=()=>{
-                const img2 = new Image() ; // temp image
-                document.getElementById("modal_canvas").width = window.innerWidth ;
-                this.getURL( img_name )
-                .then( url2 => {
-                    img2.onload = () => {
-                        URL.revokeObjectURL(url2) ;
-                        const canvas2 = document.getElementById("modal_canvas");
-                        const [cw,ch] = rightSize( crop[2], crop[3], window.innerWidth, window.innerHeight-75 ) ;
-                        canvas2.height = ch ;
-                        canvas2.getContext("2d").drawImage( img2, crop[0], crop[1], crop[2], crop[3], 0, 0, cw, ch ) ;
-                        screen.orientation.onchange=()=>{
-                            screen.orientation.onchange=()=>{};
-                            document.getElementById('modal_id').style.display='none';
-                            requestAnimationFrame( ()=>canvas.click() ) ;
-                            } ;
-                        } ;
-                    document.getElementById("modal_close").onclick=()=>{
-                        screen.orientation.onchange=()=>{};
-                        if (settings.fullscreen=="big_picture") {
-                            if ( document.fullscreenElement ) {
-                                document.exitFullscreen() ;
-                            }
-                        }
-                        document.getElementById('modal_id').style.display='none';
-                        };
-                    document.getElementById("modal_down").onclick=()=> {
-                        this.getURL( img_name )
-                        .then( url => {
-                            const link = document.createElement("a");
-                            link.download = img_name;
-                            link.href = url;
-                            link.style.display = "none";
+        canvas.width = (pic_size === "small_pic") ? 60 : 120;
+        canvas.classList.add("click_pic");
 
-                            document.body.appendChild(link);
-                            link.click(); // press invisible button
-                            
-                            // clean up
-                            // Add "delay" see: https://www.stefanjudis.com/snippets/how-trigger-file-downloads-with-javascript/
-                            setTimeout( () => {
-                                window.URL.revokeObjectURL(link.href) ;
-                                document.body.removeChild(link) ;
-                            });
-                        }) ;
-                        } ;
-                    const edit = document.getElementById("modal_edit") ;
+        let crop = [];
+
+        const closeModal = () => {
+            screen.orientation.onchange = null;
+            if (settings.fullscreen === "big_picture" && document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+            document.getElementById('modal_id').style.display = 'none';
+        };
+
+        // Render Modal Content
+        const renderModal = () => {
+            this.getURL(img_name)
+                .then(url2 => {
+                    const img2 = new Image();
+                    img2.onload = () => {
+                        URL.revokeObjectURL(url2);
+                        const canvas2 = document.getElementById("modal_canvas");
+                        const [cw, ch] = rightSize(crop[2], crop[3], window.innerWidth, window.innerHeight - 75);
+                        
+                        canvas2.width = window.innerWidth;
+                        canvas2.height = ch;
+                        canvas2.getContext("2d").drawImage(img2, crop[0], crop[1], crop[2], crop[3], 0, 0, cw, ch);
+
+                        document.getElementById("modal_caption").innerText = this.images.find(e => e.image === img_name)?.comment ?? "";
+                        document.getElementById("modal_id").style.display = "block";
+
+                        // Re-render modal on orientation change without triggering a full click cycle
+                        screen.orientation.onchange = () => renderModal();
+                    };
+                    img2.src = url2;
+                })
+                .catch(err => log.err(err));
+        };
+
+        this.getURL(img_name)
+            .then(url => {
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    crop = new_crop ?? this.images.find(i => i.image === img_name)?.crop ?? [0, 0, img.naturalWidth, img.naturalHeight];
+                    if (crop.length !== 4) crop = [0, 0, img.naturalWidth, img.naturalHeight]; // uncropped
+
+                    canvas.height = canvas.width * crop[3] / crop[2]; // scale height
+                    canvas.getContext("2d").drawImage(img, crop[0], crop[1], crop[2], crop[3], 0, 0, canvas.width, canvas.height);
+                };
+
+                canvas.onclick = () => {
+                    screen.orientation.onchange = null;
+
+                    // Request Fullscreen synchronously inside user gesture
+                    if (settings.fullscreen === "big_picture" && !document.fullscreenElement) {
+                        document.documentElement.requestFullscreen()
+                        .catch(() => {});
+                    }
+
+                    // Bind static UI controls
+                    document.getElementById("modal_close").onclick = closeModal;
+
+                    const edit = document.getElementById("modal_edit");
                     if (editable) {
                         edit.style.visibility = "visible";
-                        edit.onclick=()=> {
-                            screen.orientation.onchange=()=>{};
-                            if (settings.fullscreen=="big_picture") {
-                                if ( document.fullscreenElement ) {
-                                    document.exitFullscreen() ;
-                                }
-                            }
-                            document.getElementById('modal_id').style.display='none';
-                            page.show( "PotPixEdit", img_name ) ;
-                            };
+                        edit.onclick = () => {
+                            closeModal();
+                            page.show("PotPixEdit", img_name);
+                        };
                     } else {
                         edit.style.visibility = "hidden";
                     }
-                    ((settings.fullscreen=="big_picture") ?
-                        document.documentElement.requestFullscreen()
-                        : Promise.resolve() )
-                    .finally( _ => {
-                        img2.src=url2;
-                        document.getElementById("modal_caption").innerText=this.images.find(e=>e.image==img_name).comment;
-                        document.getElementById("modal_id").style.display="block";
-                        });
-                    })
-                .catch( err => log.err(err) ) ;
-            };
 
-            img.src=url ;
+                    renderModal(); // show it now
+                };
+
+                img.src = url;
             })
-        .catch( err => log.err(err)) ;
-        return canvas ;
+            .catch(err => log.err(err));
+
+        return canvas;
     }
 
     print_display( img_name ) {
@@ -2486,10 +2446,10 @@ class SearchTable extends ThumbTable {
         if (e.target.tagName == 'TH') {
             return this.sortClick(e);
         } else if (e.target.closest("tr")) {
-            const [id,page] = e.target.closest("tr").title.split(" # ") ;
+            const [id,targetPage] = e.target.closest("tr").title.split(" # ") ;
             pot.select( id ) ;
             page.add( "PotMenu" );
-            page.show( page );
+            page.show( targetPage );
         }
     }
 }
@@ -2569,19 +2529,19 @@ export class Search { // singleton class
     structParse( struct ) {
         return struct
         .filter( e=>!(['date','image'].includes(e.type)))
-        .map(e=>{
+        .flatMap(e=>{
             const name=e.name;
             const alias=e?.alias??name;
             if ( ['array','image_array'].includes(e.type) ) {
-                    return this.structParse(e.members)
-                    .map(o=>({name:[name,o.name].join("."),alias:[alias,o.alias].join(".")})) ;
-            } else {
-                    return ({name:name,alias:alias});
+                return this.structParse(e.members)
+                    .map(o=>({
+                        name: `${name}.${o.name}`,
+                        alias: `${alias}.${o.alias}`
+                        })) ;
             }
-            })
-        .flat();
+            return [{ name, alias }];
+            });
     }
-    
     structFields( struct ) {
         const sP = this.structParse( struct ) ;
         sP.forEach( o => this.field_alias[o.name]=o.alias );
