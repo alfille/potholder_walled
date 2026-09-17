@@ -87,7 +87,7 @@ html, body {
 /* Class to trigger the flash */
 .flash-once {
     /* 0.6s total duration, runs 1 time, leaves element at 100% keyframe state */
-    animation: single-flash 0.5s ease-in-out ;
+    animation: single-flash 0.5s ease-in-out !important ;
 }
 .allGroup {
   background-color: #edf6af;
