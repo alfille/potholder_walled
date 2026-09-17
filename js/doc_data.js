@@ -1184,7 +1184,7 @@ class ImageArrayEntry extends ArrayEntry {
                 s.hidden=false ;
             } else {
                 console.log("Missing selector",c);
-            });
+            }
         control_li.querySelector(".Darray_ok").onclick=()=>{
             local_list.save_enable() ;
             this.enclosing.edit_doc() ;
