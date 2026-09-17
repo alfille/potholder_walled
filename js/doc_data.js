@@ -1181,7 +1181,7 @@ class ImageArrayEntry extends ArrayEntry {
         [".Darray_ok",".Darray_crop",".Darray_cancel",".Darray_delete"].forEach(c=>{
             const s = control_li.querySelector(c) ;
             if (s) {
-                s.hidden=false
+                s.hidden=false ;
             } else {
                 console.log("Missing selector",c);
             });
