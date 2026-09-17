@@ -1529,7 +1529,6 @@ window.onload = () => {
 
     // Start pouchdb database
     database.open() ;  
-    const titleBox = document.getElementById("titlebox") ;     
     if ( database.db ) {
         // Thumbnails
         thumbs.setup() ; // just getting canvas from doc
@@ -1551,10 +1550,7 @@ window.onload = () => {
             include_docs: false 
             })
         .on('change', (change) => {
-            console.log("FLQAASH");
-            titleBox.classList.remove("flash-once");
-            void titleBox.offsetWidth;
-            titleBox.classList.add("flash-once");
+            TitleBox.flash() ;
             if ( change?.deleted ) {
                 thumbs.remove( change.id ) ;
             } else {
@@ -1602,6 +1598,13 @@ class TitleBox {
     show(html) {
         //console.log("TITLEBOX",html);
         document.getElementById( "titlebox" ).innerHTML = html ;
+    }
+    static flash() {
+        console.log("FLQAASH");
+        const box = document.getElementById( "titlebox" ) ;
+        box.classList.remove('flash-once');
+        void box.offsetWidth ;
+        box.classList.add('flash-once');
     }
 }
 
