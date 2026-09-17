@@ -457,10 +457,12 @@ legend {
   border: 1px solid white;
   margin:  2px;
 }
+/*
 #TopLeftImage {
   width: 100px;
   height: 100px;
   }
+*/
 .PotProcButtons {
   display: flex;
   flex-direction: column;
