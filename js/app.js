@@ -1383,6 +1383,7 @@ export class Page { // singleton class
     show_normal() { // switch between screen and print
         switch ( page.current() ) {
             case "PotEdit":
+            case "PotMenu":
             case "PotPix":
             case "PotPixEdit":
                 this.TLlast = pot.id;
@@ -2013,6 +2014,7 @@ class Thumbs {
         img.classList.add("ThumbPhoto");
         img.title = pid;
         if ( pid in this.thumblist ) {
+            console.log("thumblist",this.thumblist[pid]);
             const url = URL.createObjectURL( this.thumblist[pid] );
             img.onload = () => URL.revokeObjectURL( url );
             img.src = url;
