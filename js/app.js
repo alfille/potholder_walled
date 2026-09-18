@@ -1604,11 +1604,9 @@ window.onload = () => {
 
 class TitleBox {
     show(html) {
-        //console.log("TITLEBOX",html);
         document.getElementById( "titlebox" ).innerHTML = html ;
     }
     static flash() {
-        console.log("FLQAASH");
         const box = document.getElementById( "titlebox" ) ;
         box.classList.remove('flash-once');
         void box.offsetWidth ;
@@ -2014,9 +2012,7 @@ class Thumbs {
         img.classList.add("ThumbPhoto");
         img.title = pid;
         if ( pid in this.thumblist ) {
-            console.log("thumblist",this.thumblist[pid]);
             const url = URL.createObjectURL( this.thumblist[pid] );
-            console.log("url created",url);
             img.onload = () => URL.revokeObjectURL( url );
             img.src = url;
         } else {
