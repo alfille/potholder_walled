@@ -936,7 +936,7 @@ class ArrayEntry extends VisibleEntry {
     }
 
     edit_array_entry( idx ) {
-                const parent = this.fake_page() ;
+        const parent = this.fake_page() ;
         const adding = idx==-1 ; // flag for adding rather than editing
         const local_list = adding ? new EntryList( this.struct.members, this.Images ) : this.new_val[idx] ;
         if ( adding ) {
