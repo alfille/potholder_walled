@@ -1387,7 +1387,7 @@ export class Page { // singleton class
             case "PotPix":
             case "PotPixEdit":
                 this.TLlast = pot.id;
-                this.TL.src = thumbs.display( pot.id ) ;
+                this.TL.src = thumbs.display( pot.id ).src ;
                 break ;
             default:
                 if ( this.TLlast != null ) {
