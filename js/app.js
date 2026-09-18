@@ -2016,6 +2016,7 @@ class Thumbs {
         if ( pid in this.thumblist ) {
             console.log("thumblist",this.thumblist[pid]);
             const url = URL.createObjectURL( this.thumblist[pid] );
+            console.log("url created",url);
             img.onload = () => URL.revokeObjectURL( url );
             img.src = url;
         } else {
