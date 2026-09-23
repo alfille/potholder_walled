@@ -1,0 +1,145 @@
+# The Caddyfile is an easy way to configure your Caddy web server.
+#
+# Unless the file starts with a global options block, the first
+# uncommented line is always the address of your site.
+#
+# To use your own domain name (with automatic HTTPS), first make
+# sure your domain's A/AAAA DNS records are properly pointed to
+# this machine's public IP, then replace ":80" below with your
+# domain name.
+
+auth.{$BASE_DOMAIN} {
+    # Reverse proxy to Authelia
+    handle {
+        reverse_proxy 127.0.0.1:9091
+    }
+}
+
+# Reusable Authelia Forward-Auth Snippet
+(authelia_auth) {
+    forward_auth 127.0.0.1:9091 {
+        uri /api/authz/forward-auth
+        copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+    }
+}
+
+# lldap web admin -- security there
+lldap.{$BASE_DOMAIN} {
+    # Reverse proxy to the LLDAP Web UI port
+    reverse_proxy localhost:17170
+
+    # Recommended security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+}
+
+# Couchdb Fauxton (admin console) access
+couchdb.{$BASE_DOMAIN} {
+    log {
+        output stdout
+        format console
+    }
+    import authelia_auth
+    @to_util {
+        path /
+        vars_regexp {query} ^$
+    }
+
+    redir @to_util /_utils/ 302
+
+    handle_path /* {
+        reverse_proxy localhost:5984 {
+            header_up X-Auth-CouchDB-UserName "admin"
+            header_up X-Auth-CouchDB-Roles "_admin"
+            header_up X-Auth-CouchDB-Token "{$CoUCHDB_SECRET}"
+        }
+    }
+}
+
+couchdb-replication.{$BASE_DOMAIN} {
+        log {
+                output stdout
+                format console
+        }
+        @allowed_replicators remote_ip 147.185.239.227
+        handle @allowed_replicators {
+                reverse_proxy localhost:5984
+        }
+        handle {
+                respond 403
+        }
+}
+
+# Database applications:
+(couchdb_db) {
+        # 1. Match requests that REQUIRE authentication (exclude static assets)
+        @protected {
+                path /couchdb/* /api/me
+        }
+
+        # 2. Forward ONLY @protected requests to Authelia
+        forward_auth @protected 127.0.0.1:9091 {
+                uri /api/authz/forward-auth
+                copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+        }
+
+        # 3. Lightweight session-check endpoint for client-side JS
+        handle /auth-status {
+                rewrite * /api/authz/forward-auth
+            reverse_proxy 127.0.0.1:9091 {
+                    header_up X-Forwarded-Method GET
+                    header_up X-Forwarded-Proto {scheme}
+                    header_up X-Forwarded-Host {host}
+                    header_up X-Forwarded-Uri /
+            }
+    }
+        # 4. Proxy requests to CouchDB backend
+        handle_path /couchdb/* {
+                rewrite * /{args.0}{uri}
+                reverse_proxy localhost:5984 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_host}
+                        header_up X-Auth-CouchDB-UserName {header.Remote-User}
+                        header_up X-Auth-CouchDB-Roles "member"
+                        header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
+                }
+        }
+
+        # 5. User Identity endpoint (fixed double slash typo)
+        handle /api/me {
+                header Content-Type application/json
+
+                @unauthorized expression {header.Remote-User} == ""
+                respond @unauthorized `{"error": "Unauthorized"}` 401
+
+                respond `{"username": "{header.Remote-User}", "name": "{header.Remote-Name}", "email": "{header.Remote-Email}", "groups": "{header.Remote-Groups}"}` 200
+        }
+
+        # 6. Static File Server (Bypassed static assets land here directly)
+        handle {
+                root * /srv/potholder_walled
+                encode gzip zstd
+                file_server
+        }
+}
+{$APP_DOMAINS} {
+    import couchdb_db potholder
+}
+
+{$BASE_DOMAIN} {
+        redir / /index.html 302
+
+        @dbname {
+                path_regexp db ^/({$APP_NAMES})(?:/(.*))?$
+        }
+        redir @dbname https://{re.db.1}.{$BASE_DOMAIN}/{re.db.2} 302
+
+        root * /srv/potholder_walled
+        file_server
+}
+
+# Refer to the Caddy docs for more information:
+# https://caddyserver.com/docs/caddyfile
