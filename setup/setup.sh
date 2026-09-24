@@ -80,9 +80,48 @@ maybe_make_user() {
     fi
 }
 
-# install caddy
+# Helper: Prompt for confirmation if file exists
+confirm_overwrite() {
+    local target_file="$1"
 
+    if [ -f "$target_file" ]; then
+        local reply
+        read -r -p "File '$target_file' already exists. Overwrite? [y/N] " reply
+        case "$reply" in
+            [yY][eE][sS]|[yY])
+                return 0 # Proceed with overwrite
+                ;;
+            *)
+                echo "Skipped '$target_file'." >&2
+                return 1 # Abort write
+                ;;
+        esac
+    fi
+    return 0 # File doesn't exist, proceed
+}
+
+# Wrapper: Read stdin and write to target file if confirmed
+safe_write() {
+    local target_file="$1"
+    local mode="${2:-600}" # Default permissions: 600
+
+    if [ -z "$target_file" ]; then
+        echo "Error: Target file path required for safe_write." >&2
+        return 1
+    fi
+
+    if confirm_overwrite "$target_file"; then
+        mkdir -p "$(dirname "$target_file")"
+        cat > "$target_file"
+        chmod "$mode" "$target_file"
+        echo "Wrote $target_file successfully."
+    fi
+}
+
+# install caddy
 apt install caddy -y
 maybe_make_user "caddy" "caddy"
 mkdir -p /etc/caddy
+cp -i Caddyfile /etc/caddy/Caddyfile
+
 if [ ! -f /etc/caddy/caddy.env
