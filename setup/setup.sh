@@ -118,10 +118,39 @@ safe_write() {
     fi
 }
 
+# CADDY
 # install caddy
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curlapt install caddy -y
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+apt update
 apt install caddy -y
+
+# Create user
 maybe_make_user "caddy" "caddy"
+
+# Create Caddyfile
 mkdir -p /etc/caddy
 cp -i Caddyfile /etc/caddy/Caddyfile
 
-if [ ! -f /etc/caddy/caddy.env
+# Modify systemd service file to use environment variables
+mkdir -p /etc/systemd/system/caddy.service.d
+cat << 'EOFCADDY' | | sudo tee /etc/systemd/system/caddy.service.d/override.conf	
+[Service]
+RuntimeDirectory=caddy
+ExecStartPre=/bin/sh -c '/etc/caddy/env-setup.sh > /run/caddy/caddy.env'
+EnvironmentFile=-/etc/auth-shared/auth-shared.env
+EnvironmentFile=-/run/caddy/caddy.env
+EOFCADDY
+
+# Set ownership to the caddy user and group
+chown -R caddy:caddy /etc/caddy
+
+# Set standard secure file and directory permissions
+chmod 755 /etc/caddy
+chmod 644 /etc/caddy/Caddyfile
+
+# start service
+systemctl daemon-reload
+systemctl restart caddy
+
