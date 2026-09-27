@@ -18,7 +18,7 @@ fi
 
 # Create a random alphanumeric string
 random_string() {
-  tr -dc 'A-Za-z0-9' < dev/urandom| head -c 32
+  tr -dc 'A-Za-z0-9' < /dev/urandom| head -c 32
   echo
 }
 
@@ -118,37 +118,68 @@ safe_write() {
     fi
 }
 
+# AUTH-SHARED
+# shared auth between caddy and couchdb
+maybe_make_user auth-shared auth-shared
+mkdir -p /etc/auth-shared
+chmod 750 /etc/auth-shared
+safe_write "/etc/auth-shared/auth-shared.env" 640 << EOFAUTH
+# Token shared by caddy and couchdb
+# owned bty group auth-shared
+# both authelia and couchdb must be members of auth-shared
+#
+# groupadd auth-shared
+# Add both service users to the group
+# usermod -aG auth-shared caddy
+# usermod -aG auth-shared couchdb
+#
+# Set ownership and permissions (readable only by owner & group)
+# chown -R auth-shared:auth-shared /etc/auth-shared
+# chmod 750 /etc/auth-shared
+# chmod 640 /etc/auth-shared/shared.env
+
+# Generated on $(date)
+COUCHDB_SECRET= $(random_string)
+EOFAUTH
+
+chown -R auth-shared:auth-shared /etc/auth-shared
+
 # CADDY
 # install caddy
-apt install -y debian-keyring debian-archive-keyring apt-transport-https curlapt install caddy -y
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+apt install caddy -y
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 apt update
 apt install caddy -y
 
 # Create user
 maybe_make_user "caddy" "caddy"
+usermod -aG auth-shared caddy
 
 # Create Caddyfile
 mkdir -p /etc/caddy
 cp -i Caddyfile /etc/caddy/Caddyfile
 
-# Modify systemd service file to use environment variables
-mkdir -p /etc/systemd/system/caddy.service.d
-cat << 'EOFCADDY' | | sudo tee /etc/systemd/system/caddy.service.d/override.conf	
-[Service]
-RuntimeDirectory=caddy
-ExecStartPre=/bin/sh -c '/etc/caddy/env-setup.sh > /run/caddy/caddy.env'
-EnvironmentFile=-/etc/auth-shared/auth-shared.env
-EnvironmentFile=-/run/caddy/caddy.env
-EOFCADDY
-
-# Set ownership to the caddy user and group
+# file to create database entries in caddy
+cp -i env-setup.sh /etc/caddy/env-setup.sh
+chmod +x /etc/caddy/env-setup.sh
 chown -R caddy:caddy /etc/caddy
 
 # Set standard secure file and directory permissions
 chmod 755 /etc/caddy
 chmod 644 /etc/caddy/Caddyfile
+
+# Modify systemd service file to use environment variables
+mkdir -p /etc/systemd/system/caddy.service.d
+cat << 'EOFCADDY' | sudo tee /etc/systemd/system/caddy.service.d/override.conf	
+[Service]
+RuntimeDirectory=caddy
+RuntimeDirectoryMode=0755
+ExecStartPre=/etc/caddy/env-setup.sh
+EnvironmentFile=-/etc/auth-shared/auth-shared.env
+EnvironmentFile=-/run/caddy/caddy.env
+EOFCADDY
 
 # start service
 systemctl daemon-reload
