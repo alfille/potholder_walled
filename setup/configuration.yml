@@ -15,18 +15,8 @@
 ##    - this configuration file template is not automatically updated
 ##
 
-## Certificates directory specifies where Authelia will load trusted certificates (public portion) from in addition to
-## the system certificates store.
-## They should be in base64 format, and have one of the following extensions: *.cer, *.crt, *.pem.
-# certificates_directory: '/config/certificates/'
-
 ## The theme to display: light, dark, grey, auto.
 theme:  'auto'
-#  portal_title: 'Potholder Sign-in'
-## Set the default 2FA method for new users and for when a user has a preferred method configured that has been
-## disabled. This setting must be a method that is enabled.
-## Options are totp, webauthn, mobile_push.
-# default_2fa_method: ''
 
 ##
 ## Server Configuration
@@ -34,63 +24,15 @@ theme:  'auto'
 
 server:
   ## The address for the Main server to listen on in the address common syntax.
-  ## Formats:
-  ##  - [<scheme>://]<hostname>[:<port>][/<path>]
-  ##  - [<scheme>://][hostname]:<port>[/<path>]
-  ## Square brackets indicate optional portions of the format. Scheme must be 'tcp', 'tcp4', 'tcp6', 'unix', or 'fd'.
-  ## The default scheme is 'unix' if the address is an absolute path otherwise it's 'tcp'. The default port is '9091'.
-  ## If the path is specified this configures the router to handle both the `/` path and the configured path.
   address: 'tcp://127.0.0.1:9091/'
-
-
-  ## Server Buffers configuration.
-  # buffers:
-
-    ## Buffers usually should be configured to be the same value.
-    ## Explanation at https://www.authelia.com/c/server#buffer-sizes
-    ## Read buffer size adjusts the server's max incoming request size in bytes.
-    ## Write buffer size does the same for outgoing responses.
-
-    ## Read buffer.
-    # read: 4096
-
-    ## Write buffer.
-    # write: 4096
-
-  ## Server Timeouts configuration.
-  # timeouts:
-
-    ## Read timeout in the duration common syntax.
-    # read: '6 seconds'
-
-    ## Write timeout in the duration common syntax.
-    # write: '6 seconds'
-
-    ## Idle timeout in the duration common syntax.
-    # idle: '30 seconds'
 
   ## Server Endpoints configuration.
   ## This section is considered advanced and it SHOULD NOT be configured unless you've read the relevant documentation.
   endpoints:
-    ## Enables the pprof endpoint.
-    # enable_pprof: false
-
-    ## Enables the expvars endpoint.
-    # enable_expvars: false
-
     ## Configure the authz endpoints.
     authz:
       forward-auth:
         implementation: 'ForwardAuth'
-        # authn_strategies: []
-      # ext-authz:
-        # implementation: 'ExtAuthz'
-        # authn_strategies: []
-      # auth-request:
-        # implementation: 'AuthRequest'
-        # authn_strategies: []
-      # legacy:
-        # implementation: 'Legacy'
         # authn_strategies: []
 
 ##
@@ -109,8 +51,6 @@ server:
   ## Whether to also log to stdout when a log_file_path is defined.
   # keep_stdout: false
 
-
-
 ##
 ## Identity Validation Configuration
 ##
@@ -119,35 +59,6 @@ identity_validation:
 
   ## Reset Password flow. Adjusts how the reset password flow operates.
   reset_password:
-    ## Maximum allowed time before the JWT is generated and when the user uses it in the duration common syntax.
-    # jwt_lifespan: '5 minutes'
-
-    ## The algorithm used for the Reset Password JWT.
-    # jwt_algorithm: 'HS256'
-
-    ## The secret key used to sign and verify the JWT.
-    # jwt_secret: '' #env
-
-  ## Elevated Session flows. Adjusts the flow which require elevated sessions for example managing credentials, adding,
-  ## removing, etc.
-  # elevated_session:
-    ## Maximum allowed lifetime after the One-Time Code is generated that it is considered valid.
-    # code_lifespan: '5 minutes'
-
-    ## Maximum allowed lifetime after the user uses the One-Time Code and the user must perform the validation again in
-    ## the duration common syntax.
-    # elevation_lifespan: '10 minutes'
-
-    ## Number of characters the one-time password contains.
-    # characters: 8
-
-    ## In addition to the One-Time Code requires the user performs a second factor authentication.
-    # require_second_factor: false
-
-    ## Skips the elevation requirement and entry of the One-Time Code if the user has performed second factor
-    ## authentication.
-    # skip_second_factor: false
-
 
 ##
 ## Authentication Backend Provider Configuration
@@ -170,22 +81,10 @@ authentication_backend:
     ## The default port is '636', unless the scheme is 'ldap' in which case it's '389'.
     address: 'ldap://127.0.0.1:3890'
 
-    ## The LDAP implementation, this affects elements like the attribute utilized for resetting a password.
-    ## Acceptable options are as follows:
-    ## - 'activedirectory' - for Microsoft Active Directory.
-    ## - 'freeipa' - for FreeIPA.
-    ## - 'lldap' - for lldap.
-    ## - 'custom' - for custom specifications of attributes and filters.
-    ## This currently defaults to 'custom' to maintain existing behavior.
-    ##
     ## Depending on the option here certain other values in this section have a default value, notably all of the
     ## attribute mappings have a default value that this config overrides, you can read more about these default values
     ## at https://www.authelia.com/c/ldap#defaults
     implementation: 'lldap'
-
-    ## The dial timeout for LDAP in the duration common syntax.
-    # timeout: '20 seconds'
-
 
     ## The distinguished name of the container searched for objects in the directory information tree.
     ## See also: additional_users_dn, additional_groups_dn.
@@ -195,9 +94,6 @@ authentication_backend:
     ## The username and password of the admin user.
     user: 'uid=admin,ou=people,dc=int,dc=alfille,dc=org'
     ## Password can also be set using a secret: https://www.authelia.com/c/secrets
-    # password: '' #env
-
-
 
 ## Note: the order of the rules is important. The first policy matching (domain, resource, subject) applies.
 access_control:
