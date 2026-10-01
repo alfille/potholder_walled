@@ -58,7 +58,7 @@ maybe_make_user() {
 
     # Check if user argument was provided
     if [ -n "$group" ]; then
-		maybe_make_group "$group"
+        maybe_make_group "$group"
     fi
 
     # Check if user argument was provided
@@ -92,16 +92,16 @@ maybe_make_user() {
 }
 
 overwrite_text() {
-	local target="$1"
-	cat <<EOFOVE
+    local target="$1"
+    cat <<EOFOVE
 The file 
-.	$target 
+.   $target 
 .   .     already exists.
 
 Do you want to replace it?
 EOFOVE
 }
-	
+    
 
 # Helper: Prompt for confirmation if file exists
 confirm_overwrite() {
@@ -120,7 +120,7 @@ confirm_overwrite() {
 
 # Wrapper: Read stdin and write to target file if confirmed
 safe_write() {
-	echo "safe write"
+    echo "safe write"
     local target_file="$1"
     local mode="${2:-600}" # Default permissions: 600
 
@@ -145,6 +145,30 @@ maybe_copy() {
     fi
     cp "$src" "$dest"
 }
+
+get_password() {
+    local title="$1"
+    local prompt="$2"
+    local pw1 pw2
+    while :; do
+        pw1=$(whiptail --title "${title}" --passwordbox "${prompt}:" 10 60 3>&1 1>&2 2>&3) || exit 1
+        if [ "${#pw1}" -lt 8 ]; then
+            whiptail --title "${title}" --msgbox "Password must be at least 8 characters" 10 60  >&2
+            continue
+        fi
+
+        pw2=$(whiptail --title "${title}" --passwordbox "Repeat Admin password:" 10 60 3>&1 1>&2 2>&3) || exit 1
+
+        if [ "$pw1" != "$pw2" ]; then
+            whiptail --title "${title}" --msgbox "Passwords do not match" 10 60  >&2
+            continue
+        fi
+
+        printf '%s\n' "$pw1"
+        return 0
+    done
+}       
+
 
 ## USERS
 maybe_make_user "auth-shared" "auth-shared"
@@ -193,28 +217,8 @@ systemctl restart caddy
 systemctl restart couchdb
 
 # Shared between lldap and authelia:
-lldap_password() {
-	local pw1 pw2
-	while :; do
-		pw1=$(whiptail --title "User Manager (LLDAP)" --passwordbox "Set Admin password:" 10 60 3>&1 1>&2 2>&3) || exit 1
-		if [ "${#pw1}" -lt 8 ]; then
-			whiptail --title "User Manager (LLDAP)" --msgbox "Password must be at least 8 characters" 10 60  >&2
-			continue
-		fi
-
-		pw2=$(whiptail --title "User Manager (LLDAP)" --passwordbox "Repeat Admin password:" 10 60 3>&1 1>&2 2>&3) || exit 1
-
-		if [ "$pw1" != "$pw2" ]; then
-			whiptail --title "User Manager (LLDAP)" --msgbox "Passwords do not match" 10 60  >&2
-			continue
-		fi
-
-		printf '%s\n' "$pw1"
-		return 0
-	done
-}		
 auth2=$(random_string)
-authpsw=$(lldap_password) || exit 1
+authpsw=$(get_password "User Manager (LLDAP)" "Set Admin password") || exit 1
 cat > /etc/auth-shared/auth-shared2.env << EOFAUTH2
 # Token shared by authelia and lldap
 # these two must match
@@ -299,3 +303,55 @@ systemctl daemon-reload
 systemctl enable authelia
 systemctl restart authelia
 
+## COUCHDB
+# install
+apt install -y curl gnupg apt-transport-https
+curl -fsSL https://couchdb.apache.org/repo/keys.asc | gpg --dearmor --yes -o /usr/share/keyrings/couchdb-archive-keyring.gpg
+source /etc/os-release
+echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" | tee /etc/apt/sources.list.d/couchdb.list
+# 1. Pre-seed debconf to "none" mode so apt stays silent
+debconf-set-selections <<EOFDEB
+couchdb couchdb/mode select none
+couchdb couchdb/mode seen true
+EOFDEB
+
+# 2. Install CouchDB non-interactively
+apt update
+DEBIAN_FRONTEND=noninteractive apt install -y couchdb
+
+# 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
+password=$(get_password "CouchDB Administrator" "Select an admin password")
+safe_write "/opt/couchdb/etc/local.d/10-admin.ini" 640 <<EOFCOUCH
+[admins]
+admin = ${password}
+
+[chttpd_auth]
+secret = ${COUCHDB_SECRET}
+authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
+x_auth_username = X-Auth-CouchDB-UserName
+x_auth_roles = X-Auth-CouchDB-Roles
+x_auth_token = X-Auth-CouchDB-Token
+proxy_use_secret = false
+
+[couch_httpd_auth]
+secret = \${COUCHDB_SECRET}
+
+[cors]
+headers = accept, authorization, content-type, origin, referer
+methods = GET, PUT, POST, HEAD, DELETE
+origins = *
+credentials = true
+
+[chttpd]
+enable_cors = false
+port = 5984
+bind_address = 127.0.0.1
+authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
+EOFCOUCH
+
+# 4. Set ownership to couchdb user & group
+chown couchdb:couchdb /opt/couchdb/etc/local.d/10-admin.ini
+
+# 5. Restart CouchDB to apply settings and trigger automatic password hashing
+systemctl enable couchdb
+systemctl restart couchdb
