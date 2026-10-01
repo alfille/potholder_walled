@@ -326,7 +326,7 @@ safe_write "/opt/couchdb/etc/local.d/10-admin.ini" 640 <<EOFCOUCH
 admin = ${password}
 
 [chttpd_auth]
-secret = ${COUCHDB_SECRET}
+secret = \${COUCHDB_SECRET}
 authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
 x_auth_username = X-Auth-CouchDB-UserName
 x_auth_roles = X-Auth-CouchDB-Roles
