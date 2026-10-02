@@ -180,6 +180,16 @@ get_password() {
     done
 }       
 
+## GIT repository
+apt install git
+if [ -d "/srv/potholder_walled" ]; then
+	pushd "/srv/potholder_walled"
+	git pull
+else
+	pushd "/srv"
+	git clone https://github.com/alfille/potholder_walled
+fi
+popd
 
 ## USERS
 maybe_make_user "auth-shared" "auth-shared"
