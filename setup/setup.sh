@@ -188,6 +188,7 @@ if [ -d "/srv/potholder_walled" ]; then
 else
 	pushd "/srv"
 	git clone https://github.com/alfille/potholder_walled
+	chown -R www-data:www-data potholder_walled
 fi
 popd
 
