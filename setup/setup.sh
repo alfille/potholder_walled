@@ -21,6 +21,17 @@ fi
 # get friendly TUI interface
 apt install --yes whiptail
 
+## FQDN (fully qualified domain name)
+fqdn_to_dc() {
+  local domain="${1%.}"          # Strip trailing dot if present
+  local dc="dc=${domain//./,dc=}" # Replace all '.' with ',dc='
+  echo "$dc"
+}
+FQDN=$(whiptail --title "Get the Server's External Address" --inputbox "Enter your FQDN:" 8 60 $(hostname -f) 3>&1 1>&2 2>&3)
+DC=$(fqdn_to_dc $FQDN)
+
+echo $FQDN $DC
+
 # Create a random alphanumeric string
 random_string() {
   tr -dc 'A-Za-z0-9' < /dev/urandom| head -c 32
