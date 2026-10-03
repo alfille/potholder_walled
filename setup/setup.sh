@@ -183,12 +183,12 @@ get_password() {
 ## GIT repository
 apt install git
 if [ -d "/srv/potholder_walled" ]; then
-	pushd "/srv/potholder_walled"
-	git pull
+    pushd "/srv/potholder_walled"
+    git pull
 else
-	pushd "/srv"
-	git clone https://github.com/alfille/potholder_walled
-	chown -R www-data:www-data potholder_walled
+    pushd "/srv"
+    git clone https://github.com/alfille/potholder_walled
+    chown -R www-data:www-data potholder_walled
 fi
 popd
 
@@ -371,9 +371,39 @@ bind_address = 127.0.0.1
 authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
 EOFCOUCH
 
+# Modify systemd service file to use environment variables
+mkdir -p /etc/systemd/system/couchdb.service.d
+cat << 'EOFCOUCH' | tee /etc/systemd/system/caddy.service.d/override.conf  
+[Service]
+EnvironmentFile=-/etc/auth-shared/auth-shared.env
+EOFCOUCH
+
 # 4. Set ownership to couchdb user & group
 chown couchdb:couchdb /opt/couchdb/etc/local.d/10-admin.ini
 
 # 5. Restart CouchDB to apply settings and trigger automatic password hashing
+systemctl daemon-reload
 systemctl enable couchdb
 systemctl restart couchdb
+
+## LLDAP
+# Download and install the repository signing key
+echo 'deb http://download.opensuse.org/repositories/home:/Masgalor:/LLDAP/Debian_13/ /' | tee /etc/apt/sources.list.d/home:Masgalor:LLDAP.list
+curl -fsSL https://download.opensuse.org/repositories/home:Masgalor:LLDAP/Debian_13/Release.key | gpg --dearmor --yes | tee /etc/apt/trusted.gpg.d/home_Masgalor_LLDAP.gpg > /dev/null
+
+apt update
+apt install lldap
+
+chown lldap:lldap /etc/lldap/lldap.env
+
+# Modify systemd service file to use environment variables
+mkdir -p /etc/systemd/system/lldap.service.d
+cat << 'EOFLLDAP' | tee /etc/systemd/system/caddy.service.d/override.conf  
+[Service]
+EnvironmentFile=-/etc/lldap/lldap.env
+EnvironmentFile=-/etc/auth-shared/auth-shared2.env
+EOFLLDAP
+
+systemctl daemon-reload
+systemctl enable lldap
+systemctl restart lldap
