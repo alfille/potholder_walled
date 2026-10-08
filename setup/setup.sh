@@ -21,24 +21,43 @@ fi
 # get friendly TUI interface
 apt install --yes whiptail
 
-## FQDN (fully qualified domain name)
+## UTILITIES
+
+# repository
+repository() {
+    if [ -d "/srv/potholder_walled" ]; then
+        # Pull as www-data to preserve file ownership
+        sudo -u www-data git -C "/srv/potholder_walled" pull
+    else
+        git -C "/srv" clone https://github.com/alfille/potholder_walled
+        chown -R www-data:www-data /srv/potholder_walled
+    fi
+}
+
+# configuration fille update
+save_conf() {
+    cat > "$conf_file" << EOFCONF
+FQDN="$FQDN"
+COUCHDB_PASS="$COUCHDB_PASS"
+LLDAP_PASS="$LLDAP_PASS"
+EOFCONF
+    # for testing
+    echo "$FQDN" "$COUCHDB_PASS" "$LLDAP_PASS"
+}
+
+# parse fully qualified domain name)
 fqdn_to_dc() {
   local domain="${1%.}"          # Strip trailing dot if present
   local dc="dc=${domain//./,dc=}" # Replace all '.' with ',dc='
-  echo "$dc"
+  # echo "$dc"
 }
-FQDN=$(whiptail --title "Get the Server's External Address" --inputbox "Enter your FQDN:" 8 60 $(hostname -f) 3>&1 1>&2 2>&3)
-DC=$(fqdn_to_dc $FQDN)
-
-echo $FQDN $DC
 
 # Create a random alphanumeric string
 random_string() {
-  tr -dc 'A-Za-z0-9' < /dev/urandom| head -c 32
-  echo
+  head -c 512 /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 32
+  echo ""
 }
 
-## UTILITIES
 # Create a group if needed
 maybe_make_group() {
     local group="$1"
@@ -104,16 +123,15 @@ maybe_make_user() {
 
 overwrite_text() {
     local target="$1"
-    cat <<EOFOVE
+    cat <<EOFOVER
 The file 
 .   $target 
 .   .     already exists.
 
 Do you want to replace it?
-EOFOVE
+EOFOVER
 }
     
-
 # Helper: Prompt for confirmation if file exists
 confirm_overwrite() {
     local target_file="$1"
@@ -160,6 +178,12 @@ maybe_copy() {
 get_password() {
     local title="$1"
     local prompt="$2"
+    if [[ -n "$3" ]]; then
+        if whiptail --title "${title}" --yesno "Do you want to reset password?" 10 60; then
+            printf "%s\n" "$3"
+            return 0
+        fi
+    fi
     local pw1 pw2
     while :; do
         pw1=$(whiptail --title "${title}" --passwordbox "${prompt}:" 10 60 3>&1 1>&2 2>&3) || exit 1
@@ -178,19 +202,42 @@ get_password() {
         printf '%s\n' "$pw1"
         return 0
     done
-}       
+}
+
+systemd_restart() {
+    local service="$1"
+    systemctl daemon-reload
+    systemctl enable "$service"
+    systemmctl restart "$service"
+}      
 
 ## GIT repository
 apt install git
-if [ -d "/srv/potholder_walled" ]; then
-    pushd "/srv/potholder_walled"
-    git pull
-else
-    pushd "/srv"
-    git clone https://github.com/alfille/potholder_walled
-    chown -R www-data:www-data potholder_walled
+repository
+
+## SAVED CONFIGURATION
+# saved under "/etc/potholder/conf.env"
+conf_file="/etc/potholder/conf.env"
+if [ ! -f "/etc/potholder/conf.env" ]; then
+    mkdir -p "$(dirname "$conf_file")"
+    chown root:root "$conf_file"
+    chmod 600 "$conf_file"
+    FQDN="$(hostname -f)"
+    COUCHDB_PASS=""
+    LLDAP=""
+    save_conf
 fi
-popd
+source "$conf_file"
+if  [ -z "$FQDN" ]; then
+    FQDN="$(hostname -f)"
+fi
+
+## FQDN for server
+FQDN=$(whiptail --title "Get the Server's External Address" --inputbox "Enter your FQDN:" 8 60 "$FQDN" 3>&1 1>&2 2>&3) || exit 1
+save_conf
+DC=$(fqdn_to_dc $FQDN)
+
+echo $FQDN $DC
 
 ## USERS
 maybe_make_user "auth-shared" "auth-shared"
@@ -232,6 +279,7 @@ cat > /etc/auth-shared/auth-shared.env << EOFAUTH
 # Generated on $(date)
 COUCHDB_SECRET= $(random_string)
 EOFAUTH
+echo "EOFAUTH"
 
 chown -R auth-shared:auth-shared /etc/auth-shared
 chmod 640 /etc/auth-shared/auth-shared.env
@@ -240,7 +288,8 @@ systemctl restart couchdb
 
 # Shared between lldap and authelia:
 auth2=$(random_string)
-authpsw=$(get_password "User Manager (LLDAP)" "Set Admin password") || exit 1
+LLDAP_PASS=$(get_password "User Manager (LLDAP)" "Set Admin password" "$LLDAP_PASS") || exit 1
+save_conf
 cat > /etc/auth-shared/auth-shared2.env << EOFAUTH2
 # Token shared by authelia and lldap
 # these two must match
@@ -249,8 +298,8 @@ AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="$auth2"
 # just for session
 AUTHELIA_SESSION_SECRET="$(random_string)"
 # these two must match
-AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD="$authpsw"
-LLDAP_LDAP_USER_PASS="$authpsw"
+AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD="$LLDAP_PASS"
+LLDAP_LDAP_USER_PASS="$LLDAP_PASS"
 EOFAUTH2
 
 chmod 640 /etc/auth-shared/auth-shared2.env
@@ -291,9 +340,7 @@ EnvironmentFile=-/run/caddy/caddy.env
 EOFCADDY
 
 # start service
-systemctl daemon-reload
-systemctl enable caddy
-systemctl restart caddy
+systemd_restart "caddy"
 
 ## AUTHELIA
 #Install
@@ -321,9 +368,7 @@ EnvironmentFile=-/etc/authelia/authelia.env
 EOFAUTHELIA
 
 # start service
-systemctl daemon-reload
-systemctl enable authelia
-systemctl restart authelia
+systemd_restart "authelia"
 
 ## COUCHDB
 # install
@@ -342,10 +387,11 @@ apt update
 DEBIAN_FRONTEND=noninteractive apt install -y couchdb
 
 # 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
-password=$(get_password "CouchDB Administrator" "Select an admin password")
-safe_write "/opt/couchdb/etc/local.d/10-admin.ini" 640 <<EOFCOUCH
+COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
+save_conf
+safe_write "/opt/couchdb/etc/local.d/10-admin.ini" 640 <<EOFCOUCHDB
 [admins]
-admin = ${password}
+admin = ${COUCHDB_PASS}
 
 [chttpd_auth]
 secret = \${COUCHDB_SECRET}
@@ -369,7 +415,7 @@ enable_cors = false
 port = 5984
 bind_address = 127.0.0.1
 authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
-EOFCOUCH
+EOFCOUCHDB
 
 # Modify systemd service file to use environment variables
 mkdir -p /etc/systemd/system/couchdb.service.d
@@ -382,9 +428,7 @@ EOFCOUCH
 chown couchdb:couchdb /opt/couchdb/etc/local.d/10-admin.ini
 
 # 5. Restart CouchDB to apply settings and trigger automatic password hashing
-systemctl daemon-reload
-systemctl enable couchdb
-systemctl restart couchdb
+systemd_restart "couchdb"
 
 ## LLDAP
 # Download and install the repository signing key
@@ -404,6 +448,4 @@ EnvironmentFile=-/etc/lldap/lldap.env
 EnvironmentFile=-/etc/auth-shared/auth-shared2.env
 EOFLLDAP
 
-systemctl daemon-reload
-systemctl enable lldap
-systemctl restart lldap
+systemd_restart "lldap"
