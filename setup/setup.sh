@@ -6,7 +6,7 @@
 
 # Basically sets up caddy, authelia, lldap and couchdb
 
-## Test ROOT
+## ------- Test ROOT ----------
 # Check if the effective user ID is 0 using the 'id -u' command
 if [ "$(id -u)" -ne 0 ]; then
   echo "Error: This script must be run as root or with sudo." >&2
@@ -19,9 +19,9 @@ fi
 
 ## WHIPTAIL
 # get friendly TUI interface
-apt install --yes whiptail
+apt install --yes whiptail git 
 
-## UTILITIES
+## ---------- Functions -------------------
 
 # repository
 repository() {
@@ -34,15 +34,14 @@ repository() {
     fi
 }
 
-# configuration fille update
+# configuration file update
 save_conf() {
     cat > "$conf_file" << EOFCONF
 FQDN="$FQDN"
+DATABASES="$DATABASES"
 COUCHDB_PASS="$COUCHDB_PASS"
 LLDAP_PASS="$LLDAP_PASS"
 EOFCONF
-    # for testing
-    echo "$FQDN" "$COUCHDB_PASS" "$LLDAP_PASS"
 }
 
 # parse fully qualified domain name)
@@ -137,7 +136,7 @@ confirm_overwrite() {
     local target_file="$1"
 
     if [ -f "$target_file" ]; then
-        if whiptail --title "Confirm Overwrite" --yesno "$(overwrite_text "$target_file")" 15 70
+        if whiptail --title "Confirm Overwrite" --yesno "$(overwrite_text "$target_file")" 15 70 3>&1 1>&2 2>&3
         then
             return 0
         else
@@ -170,7 +169,7 @@ maybe_copy() {
     local src="$1"
     local dest="$2"
     if [ -f "$dest" ]; then
-        whiptail --title "Confirm Overwrite"  --yesno "$(overwrite_text "$dest")" 15 70 || return 1
+        whiptail --title "Confirm Overwrite"  --yesno "$(overwrite_text "$dest")" 15 70 3>&1 1>&2 2>&3 || return 1
     fi
     cp "$src" "$dest"
 }
@@ -179,7 +178,7 @@ get_password() {
     local title="$1"
     local prompt="$2"
     if [[ -n "$3" ]]; then
-        if whiptail --title "${title}" --yesno "Do you want to reset password?" 10 60; then
+        if ! whiptail --title "${title}" --yesno "Do you want to reset password?" 10 60 3>&1 1>&2 2>&3; then
             printf "%s\n" "$3"
             return 0
         fi
@@ -188,14 +187,14 @@ get_password() {
     while :; do
         pw1=$(whiptail --title "${title}" --passwordbox "${prompt}:" 10 60 3>&1 1>&2 2>&3) || exit 1
         if [ "${#pw1}" -lt 8 ]; then
-            whiptail --title "${title}" --msgbox "Password must be at least 8 characters" 10 60  >&2
+            whiptail --title "${title}" --msgbox "Password must be at least 8 characters" 10 60  > /dev/tty
             continue
         fi
 
         pw2=$(whiptail --title "${title}" --passwordbox "Repeat Admin password:" 10 60 3>&1 1>&2 2>&3) || exit 1
 
         if [ "$pw1" != "$pw2" ]; then
-            whiptail --title "${title}" --msgbox "Passwords do not match" 10 60  >&2
+            whiptail --title "${title}" --msgbox "Passwords do not match" 10 60  > /dev/tty
             continue
         fi
 
@@ -208,11 +207,12 @@ systemd_restart() {
     local service="$1"
     systemctl daemon-reload
     systemctl enable "$service"
-    systemmctl restart "$service"
+    systemctl restart "$service"
 }      
 
+## ------- End of functions --------
+
 ## GIT repository
-apt install git
 repository
 
 ## SAVED CONFIGURATION
@@ -223,6 +223,7 @@ if [ ! -f "/etc/potholder/conf.env" ]; then
     chown root:root "$conf_file"
     chmod 600 "$conf_file"
     FQDN="$(hostname -f)"
+    DATABASES=""
     COUCHDB_PASS=""
     LLDAP=""
     save_conf
@@ -231,13 +232,18 @@ source "$conf_file"
 if  [ -z "$FQDN" ]; then
     FQDN="$(hostname -f)"
 fi
+if  [ -z "$DATABASES" ]; then
+    DATABASES="potholder"
+fi
 
 ## FQDN for server
 FQDN=$(whiptail --title "Get the Server's External Address" --inputbox "Enter your FQDN:" 8 60 "$FQDN" 3>&1 1>&2 2>&3) || exit 1
 save_conf
 DC=$(fqdn_to_dc $FQDN)
 
-echo $FQDN $DC
+## Databases
+DATABASES=$(whiptail --title "List the databases available" --inputbox "List of databases separated by space:" 8 60 "$DATABASES" 3>&1 1>&2 2>&3) || exit 1
+save_conf
 
 ## USERS
 maybe_make_user "auth-shared" "auth-shared"
@@ -279,12 +285,9 @@ cat > /etc/auth-shared/auth-shared.env << EOFAUTH
 # Generated on $(date)
 COUCHDB_SECRET= $(random_string)
 EOFAUTH
-echo "EOFAUTH"
 
 chown -R auth-shared:auth-shared /etc/auth-shared
 chmod 640 /etc/auth-shared/auth-shared.env
-systemctl restart caddy
-systemctl restart couchdb
 
 # Shared between lldap and authelia:
 auth2=$(random_string)
@@ -301,46 +304,96 @@ AUTHELIA_SESSION_SECRET="$(random_string)"
 AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD="$LLDAP_PASS"
 LLDAP_LDAP_USER_PASS="$LLDAP_PASS"
 EOFAUTH2
+echo "EOFAUTH2"
 
 chmod 640 /etc/auth-shared/auth-shared2.env
-systemctl restart lldap
-systemctl restart authelia
 
-# CADDY
-# install caddy
-apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
-apt install caddy -y
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+## COUCHDB
+# install
+apt install -y curl gnupg apt-transport-https
+curl -fsSL https://couchdb.apache.org/repo/keys.asc | gpg --dearmor --yes -o /usr/share/keyrings/couchdb-archive-keyring.gpg
+source /etc/os-release
+echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" | tee /etc/apt/sources.list.d/couchdb.list
+# 1. Pre-seed debconf to "none" mode so apt stays silent
+debconf-set-selections <<EOFDEB
+couchdb couchdb/mode select none
+couchdb couchdb/mode seen true
+EOFDEB
+
+# 2. Install CouchDB non-interactively
 apt update
-apt install caddy -y
+DEBIAN_FRONTEND=noninteractive apt install -y couchdb
 
-# Create Caddyfile
-mkdir -p /etc/caddy
-maybe_copy Caddyfile /etc/caddy/Caddyfile
+# 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
+COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
+save_conf
+cat > /opt/couchdb/etc/local.d/10-admin.ini 640 <<EOFCOUCHDB
+[admins]
+admin = ${COUCHDB_PASS}
 
-# file to create database entries in caddy
-maybe_copy env-setup.sh /etc/caddy/env-setup.sh
-chmod +x /etc/caddy/env-setup.sh
-chown -R caddy:caddy /etc/caddy
+[chttpd_auth]
+secret = \${COUCHDB_SECRET}
+authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
+x_auth_username = X-Auth-CouchDB-UserName
+x_auth_roles = X-Auth-CouchDB-Roles
+x_auth_token = X-Auth-CouchDB-Token
+proxy_use_secret = false
 
-# Set standard secure file and directory permissions
-chmod 755 /etc/caddy
-chmod 644 /etc/caddy/Caddyfile
+[couch_httpd_auth]
+secret = \${COUCHDB_SECRET}
+
+[cors]
+headers = accept, authorization, content-type, origin, referer
+methods = GET, PUT, POST, HEAD, DELETE
+origins = *
+credentials = true
+
+[chttpd]
+enable_cors = false
+port = 5984
+bind_address = 127.0.0.1
+authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
+EOFCOUCHDB
+chown couchdb:couchdb /opt/couchdb/etc/local.d/10-admin.ini
 
 # Modify systemd service file to use environment variables
-mkdir -p /etc/systemd/system/caddy.service.d
-cat << 'EOFCADDY' | sudo tee /etc/systemd/system/caddy.service.d/override.conf  
+mkdir -p /etc/systemd/system/couchdb.service.d
+cat << 'EOFCOUCH' | tee /etc/systemd/system/caddy.service.d/override.conf  
 [Service]
-RuntimeDirectory=caddy
-RuntimeDirectoryMode=0755
-ExecStartPre=/etc/caddy/env-setup.sh
 EnvironmentFile=-/etc/auth-shared/auth-shared.env
-EnvironmentFile=-/run/caddy/caddy.env
-EOFCADDY
+EOFCOUCH
 
-# start service
-systemd_restart "caddy"
+# Restart CouchDB to apply settings and trigger automatic password hashing
+systemd_restart "couchdb"
+
+## LLDAP
+# Download and install from the repository
+echo 'deb http://download.opensuse.org/repositories/home:/Masgalor:/LLDAP/Debian_13/ /' | tee /etc/apt/sources.list.d/home:Masgalor:LLDAP.list
+curl -fsSL https://download.opensuse.org/repositories/home:Masgalor:LLDAP/Debian_13/Release.key | gpg --dearmor --yes | tee /etc/apt/trusted.gpg.d/home_Masgalor_LLDAP.gpg > /dev/null
+apt update
+apt install lldap
+
+# Set up the environment
+cat > /etc/lldap/lldap.env << EOFLLDAPENV
+# Don't change this key seed unless you want to reset the user password database
+LLDAP_KEY_SEED="wrekjthwe,krjths,d"
+LLDAP_DATABASE_URL="sqlite:///var/lib/lldap/lldap.db?mode=rwc"
+LLDAP_LDAP_USER_PASS="${LLDAP_PASS}"
+LLDAP_HTTP_URL=lldap."${FQDN}""
+EOFLLDAPENV
+chown -R kkdap:lldap /etc/lldap
+chmod 644 /etc/lldap/*
+
+# Modify systemd service file to use environment variables
+mkdir -p /etc/systemd/system/lldap.service.d
+cat << 'EOFLLDAP' | tee /etc/systemd/system/caddy.service.d/override.conf  
+[Service]
+EnvironmentFile=-/etc/lldap/lldap.env
+EnvironmentFile=-/etc/auth-shared/auth-shared2.env
+EOFLLDAP
+
+## restart lldap
+systemd_restart "lldap"
 
 ## AUTHELIA
 #Install
@@ -370,82 +423,186 @@ EOFAUTHELIA
 # start service
 systemd_restart "authelia"
 
-## COUCHDB
-# install
-apt install -y curl gnupg apt-transport-https
-curl -fsSL https://couchdb.apache.org/repo/keys.asc | gpg --dearmor --yes -o /usr/share/keyrings/couchdb-archive-keyring.gpg
-source /etc/os-release
-echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" | tee /etc/apt/sources.list.d/couchdb.list
-# 1. Pre-seed debconf to "none" mode so apt stays silent
-debconf-set-selections <<EOFDEB
-couchdb couchdb/mode select none
-couchdb couchdb/mode seen true
-EOFDEB
-
-# 2. Install CouchDB non-interactively
+# CADDY
+# install caddy
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+apt install caddy -y
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 apt update
-DEBIAN_FRONTEND=noninteractive apt install -y couchdb
+apt install caddy -y
 
-# 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
-COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
-save_conf
-safe_write "/opt/couchdb/etc/local.d/10-admin.ini" 640 <<EOFCOUCHDB
-[admins]
-admin = ${COUCHDB_PASS}
+# Create Caddyfile
+mkdir -p /etc/caddy
 
-[chttpd_auth]
-secret = \${COUCHDB_SECRET}
-authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
-x_auth_username = X-Auth-CouchDB-UserName
-x_auth_roles = X-Auth-CouchDB-Roles
-x_auth_token = X-Auth-CouchDB-Token
-proxy_use_secret = false
+cat > /etc/caddy/Caddyfile << 'EOFCADDYFILE'
+# Caddyfile
 
-[couch_httpd_auth]
-secret = \${COUCHDB_SECRET}
+# Reverse proxy to Authelia
+auth.{$BASE_DOMAIN} {
+    handle {
+        reverse_proxy 127.0.0.1:9091
+    }
+}
 
-[cors]
-headers = accept, authorization, content-type, origin, referer
-methods = GET, PUT, POST, HEAD, DELETE
-origins = *
-credentials = true
+# Reusable Authelia Forward-Auth Snippet
+(authelia_auth) {
+    forward_auth 127.0.0.1:9091 {
+        uri /api/authz/forward-auth
+        copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+    }
+}
 
-[chttpd]
-enable_cors = false
-port = 5984
-bind_address = 127.0.0.1
-authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
-EOFCOUCHDB
+# lldap web admin -- security there
+lldap.{$BASE_DOMAIN} {
+    # Reverse proxy to the LLDAP Web UI port
+    reverse_proxy localhost:17170
+    # Recommended security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+}
+
+# Couchdb Fauxton (admin console) access
+couchdb.{$BASE_DOMAIN} {
+    log {
+        output stdout
+        format console
+    }
+    import authelia_auth
+    @to_util {
+        path /
+        vars_regexp {query} ^$
+    }
+
+    redir @to_util /_utils/ 302
+
+    handle_path /* {
+        reverse_proxy localhost:5984 {
+            header_up X-Auth-CouchDB-UserName "admin"
+            header_up X-Auth-CouchDB-Roles "_admin"
+            header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
+        }
+    }
+}
+
+couchdb-replication.{$BASE_DOMAIN} {
+    log {
+        output stdout
+        format console
+    }
+    @allowed_replicators remote_ip 147.185.239.227
+    handle @allowed_replicators {
+        reverse_proxy localhost:5984
+    }
+    handle {
+        respond 403
+    }
+}
+
+# Database applications:
+(couchdb_db) {
+    # Match the first host segment before the first dot on incoming requests
+    @first_part header_regexp sub Host ^([a-zA-Z0-9-]+)\.
+
+    # 1. Match requests that REQUIRE authentication (exclude static assets)
+    @protected {
+        path /couchdb/* /api/me
+    }
+
+    # 2. Forward ONLY @protected requests to Authelia
+    forward_auth @protected 127.0.0.1:9091 {
+        uri /api/authz/forward-auth
+        copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+    }
+
+    # 3. Lightweight session-check endpoint for client-side JS
+    handle /auth-status {
+        rewrite * /api/authz/forward-auth
+        reverse_proxy 127.0.0.1:9091 {
+            header_up X-Forwarded-Method GET
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
+            header_up X-Forwarded-Uri /
+        }
+    }
+
+    # 4. Proxy requests to CouchDB backend
+    handle_path /couchdb/* {
+        rewrite @first_part /{re.sub.1}{uri}
+        reverse_proxy localhost:5984 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_host}
+            header_up X-Auth-CouchDB-UserName {header.Remote-User}
+            header_up X-Auth-CouchDB-Roles "member"
+            header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
+        }
+    }
+
+    # 5. User Identity endpoint (fixed double slash typo)
+    handle /api/me {
+        header Content-Type application/json
+
+        @unauthorized expression {header.Remote-User} == ""
+        respond @unauthorized `{"error": "Unauthorized"}` 401
+
+        respond `{"username": "{header.Remote-User}", "name": "{header.Remote-Name}", "email": "{header.Remote-Email}", "groups": "{header.Remote-Groups}"}` 200
+    }
+
+    # 6. Static File Server (Bypassed static assets land here directly)
+    handle {
+        root * /srv/potholder_walled
+        encode gzip zstd
+        file_server
+    }
+}
+
+# Domain for each database
+{$APP_DOMAINS} {
+    import couchdb_db
+}
+
+{$BASE_DOMAIN} {
+    redir / /index.html 302
+
+    @dbname {
+        path_regexp db ^/({$APP_NAMES})(?:/(.*))?$
+    }
+    redir @dbname https://{re.db.1}.{$BASE_DOMAIN}/{re.db.2} 302
+
+    root * /srv/potholder_walled
+    file_server
+}
+EOFCADDYFILE
+
+cat > /etc/caddy/caddy.env << EOFCADDYENV
+BASE_DOMAIN="${FQDN}"
+# list of couchdb databases
+APP_NAMES="$(echo "$DATABASES" | tr ' ' '|' )"
+
+# name of subdomain associated with each database
+APP_DOMAINS=$(for name in $DATABASES; do echo -n "$name.${FQDN} "; done)
+EOFCADDYENV
+
+# Set standard secure file and directory permissions
+chmod 755 /etc/caddy
+chmod 644 /etc/caddy/*
+chown -R caddy:caddy /etc/caddy
+sudo mkdir -p /var/lib/caddy
+sudo chown -R caddy:caddy /var/lib/caddy
 
 # Modify systemd service file to use environment variables
-mkdir -p /etc/systemd/system/couchdb.service.d
-cat << 'EOFCOUCH' | tee /etc/systemd/system/caddy.service.d/override.conf  
+mkdir -p /etc/systemd/system/caddy.service.d
+cat << 'EOFCADDY' | sudo tee /etc/systemd/system/caddy.service.d/override.conf  
 [Service]
+Environment="CADDYPATH=/var/lib/caddy"
+Environment="XDG_DATA_HOME=/var/lib/caddy/.local/share"
+Environment="XDG_CONFIG_HOME=/var/lib/caddy/.config"
+EnvironmentFile=-/etc/caddy/caddy.env
 EnvironmentFile=-/etc/auth-shared/auth-shared.env
-EOFCOUCH
+EOFCADDY
 
-# 4. Set ownership to couchdb user & group
-chown couchdb:couchdb /opt/couchdb/etc/local.d/10-admin.ini
-
-# 5. Restart CouchDB to apply settings and trigger automatic password hashing
-systemd_restart "couchdb"
-
-## LLDAP
-# Download and install the repository signing key
-echo 'deb http://download.opensuse.org/repositories/home:/Masgalor:/LLDAP/Debian_13/ /' | tee /etc/apt/sources.list.d/home:Masgalor:LLDAP.list
-curl -fsSL https://download.opensuse.org/repositories/home:Masgalor:LLDAP/Debian_13/Release.key | gpg --dearmor --yes | tee /etc/apt/trusted.gpg.d/home_Masgalor_LLDAP.gpg > /dev/null
-
-apt update
-apt install lldap
-
-chown lldap:lldap /etc/lldap/lldap.env
-
-# Modify systemd service file to use environment variables
-mkdir -p /etc/systemd/system/lldap.service.d
-cat << 'EOFLLDAP' | tee /etc/systemd/system/caddy.service.d/override.conf  
-[Service]
-EnvironmentFile=-/etc/lldap/lldap.env
-EnvironmentFile=-/etc/auth-shared/auth-shared2.env
-EOFLLDAP
-
-systemd_restart "lldap"
+# start service
+systemd_restart "caddy"

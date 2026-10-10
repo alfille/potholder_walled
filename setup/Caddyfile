@@ -1,15 +1,7 @@
-# The Caddyfile is an easy way to configure your Caddy web server.
-#
-# Unless the file starts with a global options block, the first
-# uncommented line is always the address of your site.
-#
-# To use your own domain name (with automatic HTTPS), first make
-# sure your domain's A/AAAA DNS records are properly pointed to
-# this machine's public IP, then replace ":80" below with your
-# domain name.
+# Caddyfile
 
+# Reverse proxy to Authelia
 auth.{$BASE_DOMAIN} {
-    # Reverse proxy to Authelia
     handle {
         reverse_proxy 127.0.0.1:9091
     }
@@ -27,7 +19,6 @@ auth.{$BASE_DOMAIN} {
 lldap.{$BASE_DOMAIN} {
     # Reverse proxy to the LLDAP Web UI port
     reverse_proxy localhost:17170
-
     # Recommended security headers
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
@@ -54,7 +45,7 @@ couchdb.{$BASE_DOMAIN} {
         reverse_proxy localhost:5984 {
             header_up X-Auth-CouchDB-UserName "admin"
             header_up X-Auth-CouchDB-Roles "_admin"
-            header_up X-Auth-CouchDB-Token "{$CoUCHDB_SECRET}"
+            header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
         }
     }
 }
@@ -75,6 +66,9 @@ couchdb-replication.{$BASE_DOMAIN} {
 
 # Database applications:
 (couchdb_db) {
+        # Match the first host segment before the first dot on incoming requests
+        @first_part header_regexp sub Host ^([a-zA-Z0-9-]+)\.
+
         # 1. Match requests that REQUIRE authentication (exclude static assets)
         @protected {
                 path /couchdb/* /api/me
@@ -95,19 +89,20 @@ couchdb-replication.{$BASE_DOMAIN} {
                     header_up X-Forwarded-Host {host}
                     header_up X-Forwarded-Uri /
             }
-    }
-        # 4. Proxy requests to CouchDB backend
-        handle_path /couchdb/* {
-                rewrite * /{args.0}{uri}
-                reverse_proxy localhost:5984 {
-            header_up Host {upstream_hostport}
-            header_up X-Real-IP {remote_host}
-                        header_up X-Auth-CouchDB-UserName {header.Remote-User}
-                        header_up X-Auth-CouchDB-Roles "member"
-                        header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
-                }
         }
 
+        # 4. Proxy requests to CouchDB backend
+        handle_path /couchdb/* {
+            rewrite @first_part /{re.sub.1}{uri}
+            reverse_proxy localhost:5984 {
+                header_up Host {upstream_hostport}
+                header_up X-Real-IP {remote_host}
+                header_up X-Auth-CouchDB-UserName {header.Remote-User}
+                header_up X-Auth-CouchDB-Roles "member"
+                header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
+            }
+        }
+    
         # 5. User Identity endpoint (fixed double slash typo)
         handle /api/me {
                 header Content-Type application/json
@@ -125,8 +120,10 @@ couchdb-replication.{$BASE_DOMAIN} {
                 file_server
         }
 }
+
+# Domain for each database
 {$APP_DOMAINS} {
-    import couchdb_db potholder
+    import couchdb_db
 }
 
 {$BASE_DOMAIN} {
@@ -140,6 +137,3 @@ couchdb-replication.{$BASE_DOMAIN} {
         root * /srv/potholder_walled
         file_server
 }
-
-# Refer to the Caddy docs for more information:
-# https://caddyserver.com/docs/caddyfile
