@@ -48,7 +48,7 @@ EOFCONF
 fqdn_to_dc() {
   local domain="${1%.}"          # Strip trailing dot if present
   local dc="dc=${domain//./,dc=}" # Replace all '.' with ',dc='
-  # echo "$dc"
+  echo $dc
 }
 
 # Create a random alphanumeric string
@@ -68,9 +68,7 @@ maybe_make_group() {
     fi
 
     # Check if group exists, otherwise create it
-    if getent group "$group" >/dev/null 2>&1; then
-        echo "$group"
-    else
+    if ! getent group "$group" >/dev/null 2>&1; then
         if groupadd "$group"; then
             echo "Group '$group' created successfully."
         else
@@ -97,9 +95,7 @@ maybe_make_user() {
     fi
 
     # Check if user exists, otherwise create
-    if id "$user" >/dev/null 2>&1; then
-        :
-    else
+    if ! id "$user" >/dev/null 2>&1; then
         # Build useradd command arguments
         local useradd_cmd=(useradd --system --no-create-home)
 
@@ -131,49 +127,6 @@ Do you want to replace it?
 EOFOVER
 }
     
-# Helper: Prompt for confirmation if file exists
-confirm_overwrite() {
-    local target_file="$1"
-
-    if [ -f "$target_file" ]; then
-        if whiptail --title "Confirm Overwrite" --yesno "$(overwrite_text "$target_file")" 15 70 3>&1 1>&2 2>&3
-        then
-            return 0
-        else
-            return 1
-        fi
-    fi
-    return 0 # File doesn't exist, proceed
-}
-
-# Wrapper: Read stdin and write to target file if confirmed
-safe_write() {
-    echo "safe write"
-    local target_file="$1"
-    local mode="${2:-600}" # Default permissions: 600
-
-    if [ -z "$target_file" ]; then
-        echo "Error: Target file path required for safe_write." >&2
-        return 1
-    fi
-
-    if confirm_overwrite "$target_file"; then
-        mkdir -p "$(dirname "$target_file")"
-        cat > "$target_file"
-        chmod "$mode" "$target_file"
-        echo "Wrote $target_file successfully."
-    fi
-}
-
-maybe_copy() {
-    local src="$1"
-    local dest="$2"
-    if [ -f "$dest" ]; then
-        whiptail --title "Confirm Overwrite"  --yesno "$(overwrite_text "$dest")" 15 70 3>&1 1>&2 2>&3 || return 1
-    fi
-    cp "$src" "$dest"
-}
-
 get_password() {
     local title="$1"
     local prompt="$2"
@@ -304,7 +257,6 @@ AUTHELIA_SESSION_SECRET="$(random_string)"
 AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD="$LLDAP_PASS"
 LLDAP_LDAP_USER_PASS="$LLDAP_PASS"
 EOFAUTH2
-echo "EOFAUTH2"
 
 chmod 640 /etc/auth-shared/auth-shared2.env
 
@@ -327,7 +279,7 @@ DEBIAN_FRONTEND=noninteractive apt install -y couchdb
 # 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
 COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
 save_conf
-cat > /opt/couchdb/etc/local.d/10-admin.ini 640 <<EOFCOUCHDB
+cat > /opt/couchdb/etc/local.d/10-admin.ini <<EOFCOUCHDB
 [admins]
 admin = ${COUCHDB_PASS}
 
@@ -374,20 +326,46 @@ apt update
 apt install lldap
 
 # Set up the environment
+sudo mkdir -p /var/lib/lldap
+sudo chown -R lldap:lldap /var/lib/lldap
+mkdir -p /etc/lldap
+cat > /etc/lldap/lldap_config.toml << EOFLLDAPTOML
+ldap_host = "127.0.0.1"
+ldap_port = 3890
+
+http_host = "127.0.0.1"
+http_port = 17170
+
+## The public URL of the server, for password reset links.
+http_url = "https://${FQDN}"
+
+## Base DN for LDAP.
+ldap_base_dn = "${DC}"
+
+## Admin username.
+ldap_user_dn = "admin"
+
+## Admin email.
+## Email for the admin account. It is only used when initially creating
+## the admin user, and can safely be omitted.
+ldap_user_email = "paul.alfille@gmail.com"
+EOFLLDAPTOML
+
 cat > /etc/lldap/lldap.env << EOFLLDAPENV
 # Don't change this key seed unless you want to reset the user password database
 LLDAP_KEY_SEED="wrekjthwe,krjths,d"
 LLDAP_DATABASE_URL="sqlite:///var/lib/lldap/lldap.db?mode=rwc"
 LLDAP_LDAP_USER_PASS="${LLDAP_PASS}"
-LLDAP_HTTP_URL=lldap."${FQDN}""
 EOFLLDAPENV
-chown -R kkdap:lldap /etc/lldap
+chown -R lldap:lldap /etc/lldap
 chmod 644 /etc/lldap/*
 
 # Modify systemd service file to use environment variables
 mkdir -p /etc/systemd/system/lldap.service.d
-cat << 'EOFLLDAP' | tee /etc/systemd/system/caddy.service.d/override.conf  
+cat << 'EOFLLDAP' | tee /etc/systemd/system/lldap.service.d/override.conf  
 [Service]
+WorkingDirectory=/var/lib/lldap
+ReadWritePaths=/var/lib/lldap
 EnvironmentFile=-/etc/lldap/lldap.env
 EnvironmentFile=-/etc/auth-shared/auth-shared2.env
 EOFLLDAP
@@ -404,8 +382,112 @@ apt update
 apt install -y authelia
 
 mkdir -p /etc/authelia
-cp configuration.yml /etc/authelia/configuration.yml
-cp authelia.env /etc/authelia/authelia.env
+cat > /etc/authelia/configuration.yml << EOFAUTHELIACONF
+# yamllint disable rule:comments-indentation
+---
+###############################################################################
+##                           Authelia Configuration                          ##
+###############################################################################
+
+## The theme to display: light, dark, grey, auto.
+theme:  'auto'
+
+server:
+  address: 'tcp://127.0.0.1:9091/'
+  endpoints:
+    authz:
+      forward-auth:
+        implementation: 'ForwardAuth'
+
+##
+## Identity Validation Configuration
+##
+## This configuration tunes the identity validation flows.
+identity_validation:
+
+  ## Reset Password flow. Adjusts how the reset password flow operates.
+  reset_password:
+
+##
+## Authentication Backend Provider Configuration
+authentication_backend:
+  ldap:
+    address: 'ldap://127.0.0.1:3890'
+    implementation: 'lldap'
+    base_dn: '$DC'
+    ## The username and password of the admin user.
+    user: 'uid=admin,ou=people,$DC'
+
+## Note: the order of the rules is important. The first policy matching (domain, resource, subject) applies.
+access_control:
+  default_policy: 'deny'
+
+  rules:
+
+    # auth is post-check
+    - domain: 'auth.$FQDN'
+      policy: 'bypass'
+
+    # lldap webb admin console
+    - domain: 'lldap.$FQDN'
+      policy: 'bypass'
+
+    # couchdb Fauxton admin console
+    - domain: 'couchdb.$FQDN'
+      subject: 'group:couchdb_admin'
+      policy: 'one_factor'
+
+    # replication
+    - domain: 'couchdb-replication.$FQDN'
+      policy: 'bypass'
+
+    # databases
+$(for db in $DATABASES; do
+    printf "    - domain: '%s.%s'\n" "$db" "$FQDN"
+    printf "      subject: 'group:%s'\n" "$db"
+    printf "      policy: 'one_factor'\n\n"
+done)
+
+    # everyone
+    - domain: '*.$FQDN'
+      subject: 'group:couch_admin'
+      policy: 'one_factor'
+      
+
+##
+## Session Provider Configuration
+session:
+#  secret: '' #env
+  expiration: '24h'
+  inactivity: '12h'
+  remember_me: '1M'
+  cookies:
+    - domain: 'int.alfille.org'
+      authelia_url: 'https://auth.int.alfille.org'
+##
+## Storage Provider Configuration
+storage:
+  local:
+    ## Path to the SQLite3 Database.
+    path: '/var/lib/authelia/db.sqlite3'
+
+
+##
+## Notification Provider
+notifier:
+  filesystem:
+    filename: '/var/lib/authelia/notification.txt'
+
+log:
+  level: debug
+  format: text
+
+EOFAUTHELIACONF
+
+cat > /etc/authelia/authelia.env << EOFAUTHELIAENV
+AUTHELIA_STORAGE_ENCRYPTION_KEY="lsdjfg;lsdkhglksdhglskjhgsdkhg"
+EOFAUTHELIAENV
+
 chown -R authelia:authelia /etc/authelia
 chmod 644 /etc/authelia/*
 
@@ -416,8 +498,8 @@ sudo install -d -m 0750 -o authelia -g authelia /var/lib/authelia
 mkdir -p /etc/systemd/system/authelia.service.d
 cat << 'EOFAUTHELIA' | sudo tee /etc/systemd/system/authelia.service.d/override.conf  
 [Service]
+Environment="AUTHELIA_STORAGE_ENCRYPTION_KEY=lsdjfg;lsdkhglksdhglskjhgsdkhg"
 EnvironmentFile=-/etc/auth-shared/auth-shared2.env
-EnvironmentFile=-/etc/authelia/authelia.env
 EOFAUTHELIA
 
 # start service
