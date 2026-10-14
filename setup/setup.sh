@@ -115,18 +115,7 @@ maybe_make_user() {
         fi
     fi
 }
-
-overwrite_text() {
-    local target="$1"
-    cat <<EOFOVER
-The file 
-.   $target 
-.   .     already exists.
-
-Do you want to replace it?
-EOFOVER
-}
-    
+   
 get_password() {
     local title="$1"
     local prompt="$2"
