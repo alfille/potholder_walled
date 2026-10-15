@@ -19,7 +19,7 @@ fi
 
 ## WHIPTAIL
 # get friendly TUI interface
-apt install --yes whiptail git 
+apt install --yes whiptail git curl
 
 ## ---------- Functions -------------------
 
@@ -151,6 +151,29 @@ systemd_restart() {
     systemctl enable "$service"
     systemctl restart "$service"
 }      
+
+database_create () {
+	local COUCHDB_URL="http://admin:${COUCHDB_PASS}@127.0.0.1:5984"
+	echo "curl to $COUCHDB_URL"
+	local DB_NAME="$1"
+	local RESPONSE
+
+	# Check if the database exists (HTTP status 200)
+	HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$COUCHDB_URL/$DB_NAME")
+
+	if [ "$HTTP_STATUS" -eq 200 ]; then
+	  echo "Database '$DB_NAME' already exists."
+	else
+	  # Create the database
+	  RESPONSE=$(curl -s -X PUT "$COUCHDB_URL/$DB_NAME")
+	  if echo "$RESPONSE" | grep -q '"ok":true'; then
+		echo "Database '$DB_NAME' created successfully."
+	  else
+		echo "Failed to create database: $RESPONSE"
+		exit 1
+	  fi
+	fi
+}
 
 ## ------- End of functions --------
 
@@ -306,6 +329,13 @@ EOFCOUCH
 
 # Restart CouchDB to apply settings and trigger automatic password hashing
 systemd_restart "couchdb"
+
+# Create databases
+for db in $DATABASES; do
+	echo "test $db"
+	database_create "$db"
+	
+done
 
 ## LLDAP
 # Download and install from the repository

@@ -85,10 +85,19 @@ $(var_is_set DATABASES)
 $(var_is_set LLDAP_PASS)
 $(var_is_set COUCHDB_PASS)
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
 EOFCONF2
 fi
 
+cat << EOFSERVICE
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+Systemd service
+$(for s in caddy authelia lldap couchdb; do
+  echo -e "$s\t$(systemctl is-enabled $s)\t$(systemctl is-active $s)"
+done)
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
+EOFSERVICE
 exit 0
 
 
