@@ -185,6 +185,7 @@ repository
 conf_file="/etc/potholder/conf.env"
 if [ ! -f "/etc/potholder/conf.env" ]; then
     mkdir -p "$(dirname "$conf_file")"
+    touch "$conf_file"
     chown root:root "$conf_file"
     chmod 600 "$conf_file"
     FQDN="$(hostname -f)"
