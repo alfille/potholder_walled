@@ -153,27 +153,27 @@ systemd_restart() {
 }      
 
 database_create () {
-	local COUCHDB_URL="http://admin:${COUCHDB_PASS}@127.0.0.1:5984"
-	echo "curl to $COUCHDB_URL"
-	local DB_NAME="$1"
-	local RESPONSE
+    local COUCHDB_URL="http://admin:${COUCHDB_PASS}@127.0.0.1:5984"
+    #echo "curl to $COUCHDB_URL"
+    local DB_NAME="$1"
+    local RESPONSE
 
-	# Check if the database exists (HTTP status 200)
-	HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$COUCHDB_URL/$DB_NAME")
+    # Check if the database exists (HTTP status 200)
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$COUCHDB_URL/$DB_NAME")
 
-	if [ "$HTTP_STATUS" -eq 200 ]; then
-	  echo "Database '$DB_NAME' already exists."
-	else
-	  # Create the database
-	  RESPONSE=$(curl -s -X PUT "$COUCHDB_URL/$DB_NAME")
-	  if echo "$RESPONSE" | grep -q '"ok":true'; then
-		echo "Database '$DB_NAME' created successfully."
-	  else
-		echo "Failed to create database $DB_NAME Error: $RESPONSE"
-		return 1
-	  fi
-	fi
-	return 0
+    if [ "$HTTP_STATUS" -eq 200 ]; then
+      echo "Database '$DB_NAME' already exists."
+    else
+      # Create the database
+      RESPONSE=$(curl -s -X PUT "$COUCHDB_URL/$DB_NAME")
+      if echo "$RESPONSE" | grep -q '"ok":true'; then
+        echo "Database '$DB_NAME' created successfully."
+      else
+        echo "Failed to create database $DB_NAME Error: $RESPONSE"
+        return 1
+      fi
+    fi
+    return 0
 }
 
 ## ------- End of functions --------
@@ -275,29 +275,30 @@ EOFAUTH2
 chmod 640 /etc/auth-shared/auth-shared2.env
 
 ## COUCHDB
-echo "--------------"
-echo "   COUCHDB    "
-echo "--------------"
-# install
-apt install -y curl gnupg apt-transport-https
-curl -fsSL https://couchdb.apache.org/repo/keys.asc | gpg --dearmor --yes -o /usr/share/keyrings/couchdb-archive-keyring.gpg
-source /etc/os-release
-echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" | tee /etc/apt/sources.list.d/couchdb.list
-# 1. Pre-seed debconf to "none" mode so apt stays silent
-debconf-set-selections <<EOFDEB
+setup_couchdb() {
+    echo "--------------"
+    echo "   COUCHDB    "
+    echo "--------------"
+    # install
+    apt install -y curl gnupg apt-transport-https
+    curl -fsSL https://couchdb.apache.org/repo/keys.asc | gpg --dearmor --yes -o /usr/share/keyrings/couchdb-archive-keyring.gpg
+    source /etc/os-release
+    echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${VERSION_CODENAME} main" | tee /etc/apt/sources.list.d/couchdb.list
+    # 1. Pre-seed debconf to "none" mode so apt stays silent
+    debconf-set-selections <<EOFDEB
 couchdb couchdb/mode select none
 couchdb couchdb/mode seen true
 EOFDEB
 
-# 2. Install CouchDB non-interactively
-apt update
-DEBIAN_FRONTEND=noninteractive apt install -y couchdb
+    # 2. Install CouchDB non-interactively
+    apt update
+    local DEBIAN_FRONTEND=noninteractive apt install -y couchdb
 
-# 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
-COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
-save_conf
-couchdb_ini="/opt/couchdb/etc/local.d/10-admin.ini"
-cat > "$couchdb_ini" <<EOFCOUCHDB
+    # 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
+    COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
+    save_conf
+    local couchdb_ini="/opt/couchdb/etc/local.d/10-admin.ini"
+    cat > "$couchdb_ini" <<EOFCOUCHDB
 [admins]
 admin = ${COUCHDB_PASS}
 
@@ -326,33 +327,29 @@ port = 5984
 bind_address = 127.0.0.1
 authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
 EOFCOUCHDB
-chown couchdb:couchdb "$couchdb_ini"
-chmod 640 "$couchdb_ini"
+    chown couchdb:couchdb "$couchdb_ini"
+    chmod 640 "$couchdb_ini"
 
-# Restart CouchDB to apply settings and trigger automatic password hashing
-systemd_restart "couchdb"
-
-# Create databases
-for db in $DATABASES; do
-	echo "test $db"
-	database_create "$db"
-done
+    # Restart CouchDB to apply settings and trigger automatic password hashing
+    systemd_restart "couchdb"
+}
 
 ## LLDAP
-echo "--------------"
-echo "   LLDAP      "
-echo "--------------"
-# Download and install from the repository
-echo 'deb http://download.opensuse.org/repositories/home:/Masgalor:/LLDAP/Debian_13/ /' | tee /etc/apt/sources.list.d/home:Masgalor:LLDAP.list
-curl -fsSL https://download.opensuse.org/repositories/home:Masgalor:LLDAP/Debian_13/Release.key | gpg --dearmor --yes | tee /etc/apt/trusted.gpg.d/home_Masgalor_LLDAP.gpg > /dev/null
-apt update
-apt install lldap
+setup_lldap() {
+    echo "--------------"
+    echo "   LLDAP      "
+    echo "--------------"
+    # Download and install from the repository
+    echo 'deb http://download.opensuse.org/repositories/home:/Masgalor:/LLDAP/Debian_13/ /' | tee /etc/apt/sources.list.d/home:Masgalor:LLDAP.list
+    curl -fsSL https://download.opensuse.org/repositories/home:Masgalor:LLDAP/Debian_13/Release.key | gpg --dearmor --yes | tee /etc/apt/trusted.gpg.d/home_Masgalor_LLDAP.gpg > /dev/null
+    apt update
+    apt install lldap
 
-# Set up the environment
-sudo mkdir -p /var/lib/lldap
-sudo chown -R lldap:lldap /var/lib/lldap
-mkdir -p /etc/lldap
-cat > /etc/lldap/lldap_config.toml << EOFLLDAPTOML
+    # Set up the environment
+    sudo mkdir -p /var/lib/lldap
+    sudo chown -R lldap:lldap /var/lib/lldap
+    mkdir -p /etc/lldap
+    cat > /etc/lldap/lldap_config.toml << EOFLLDAPTOML
 ldap_host = "127.0.0.1"
 ldap_port = 3890
 
@@ -374,7 +371,7 @@ ldap_user_dn = "admin"
 ldap_user_email = "paul.alfille@gmail.com"
 EOFLLDAPTOML
 
-cat > /etc/lldap/lldap.env << EOFLLDAPENV
+    cat > /etc/lldap/lldap.env << EOFLLDAPENV
 # Don't change this key seed unless you want to reset the user password database
 LLDAP_KEY_SEED="wrekjthwe,krjths,d"
 LLDAP_DATABASE_URL="sqlite:///var/lib/lldap/lldap.db?mode=rwc"
@@ -393,22 +390,24 @@ EnvironmentFile=-/etc/lldap/lldap.env
 EnvironmentFile=-/etc/auth-shared/auth-shared2.env
 EOFLLDAP
 
-## restart lldap
-systemd_restart "lldap"
+    ## restart lldap
+    systemd_restart "lldap"
+}
 
 ## AUTHELIA
-echo "--------------"
-echo "   AUTHELIA   "
-echo "--------------"
-#Install
-apt install ca-certificates curl gnupg
-curl -fsSL https://www.authelia.com/keys/authelia-security.gpg -o /usr/share/keyrings/authelia-security.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/authelia-security.gpg] https://apt.authelia.com stable main" | tee /etc/apt/sources.list.d/authelia.list
-apt update
-apt install -y authelia
+setup_authelia() {
+    echo "--------------"
+    echo "   AUTHELIA   "
+    echo "--------------"
+    #Install
+    apt install ca-certificates curl gnupg
+    curl -fsSL https://www.authelia.com/keys/authelia-security.gpg -o /usr/share/keyrings/authelia-security.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/authelia-security.gpg] https://apt.authelia.com stable main" | tee /etc/apt/sources.list.d/authelia.list
+    apt update
+    apt install -y authelia
 
-mkdir -p /etc/authelia
-cat > /etc/authelia/configuration.yml << EOFAUTHELIACONF
+    mkdir -p /etc/authelia
+    cat > /etc/authelia/configuration.yml << EOFAUTHELIACONF
 # yamllint disable rule:comments-indentation
 ---
 ###############################################################################
@@ -510,43 +509,45 @@ log:
 
 EOFAUTHELIACONF
 
-cat > /etc/authelia/authelia.env << EOFAUTHELIAENV
+    cat > /etc/authelia/authelia.env << EOFAUTHELIAENV
 AUTHELIA_STORAGE_ENCRYPTION_KEY="lsdjfg;lsdkhglksdhglskjhgsdkhg"
 EOFAUTHELIAENV
 
-chown -R authelia:authelia /etc/authelia
-chmod 644 /etc/authelia/*
+    chown -R authelia:authelia /etc/authelia
+    chmod 644 /etc/authelia/*
 
-# database directory
-sudo install -d -m 0750 -o authelia -g authelia /var/lib/authelia
+    # database directory
+    sudo install -d -m 0750 -o authelia -g authelia /var/lib/authelia
 
-# Modify systemd service file to use environment variables
-mkdir -p /etc/systemd/system/authelia.service.d
-cat << 'EOFAUTHELIA' | sudo tee /etc/systemd/system/authelia.service.d/override.conf  
+    # Modify systemd service file to use environment variables
+    mkdir -p /etc/systemd/system/authelia.service.d
+    cat << 'EOFAUTHELIA' | sudo tee /etc/systemd/system/authelia.service.d/override.conf  
 [Service]
 Environment="AUTHELIA_STORAGE_ENCRYPTION_KEY=lsdjfg;lsdkhglksdhglskjhgsdkhg"
 EnvironmentFile=-/etc/auth-shared/auth-shared2.env
 EOFAUTHELIA
 
-# start service
-systemd_restart "authelia"
+    # start service
+    systemd_restart "authelia"
+}
 
 # CADDY
-echo "--------------"
-echo "   CADDY      "
-echo "--------------"
-# install caddy
-apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
-apt install caddy -y
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
-apt update
-apt install caddy -y
+setup_caddy() {
+    echo "--------------"
+    echo "   CADDY      "
+    echo "--------------"
+    # install caddy
+    apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+    apt install caddy -y
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+    apt update
+    apt install caddy -y
 
-# Create Caddyfile
-mkdir -p /etc/caddy
+    # Create Caddyfile
+    mkdir -p /etc/caddy
 
-cat > /etc/caddy/Caddyfile << 'EOFCADDYFILE'
+    cat > /etc/caddy/Caddyfile << 'EOFCADDYFILE'
 # Caddyfile
 
 # Reverse proxy to Authelia
@@ -688,7 +689,7 @@ couchdb-replication.{$BASE_DOMAIN} {
 }
 EOFCADDYFILE
 
-cat > /etc/caddy/caddy.env << EOFCADDYENV
+    cat > /etc/caddy/caddy.env << EOFCADDYENV
 BASE_DOMAIN="${FQDN}"
 # list of couchdb databases
 APP_NAMES="$(echo "$DATABASES" | tr ' ' '|' )"
@@ -697,16 +698,16 @@ APP_NAMES="$(echo "$DATABASES" | tr ' ' '|' )"
 APP_DOMAINS=$(for name in $DATABASES; do echo -n "$name.${FQDN} "; done)
 EOFCADDYENV
 
-# Set standard secure file and directory permissions
-chmod 755 /etc/caddy
-chmod 644 /etc/caddy/*
-chown -R caddy:caddy /etc/caddy
-sudo mkdir -p /var/lib/caddy
-sudo chown -R caddy:caddy /var/lib/caddy
+    # Set standard secure file and directory permissions
+    chmod 755 /etc/caddy
+    chmod 644 /etc/caddy/*
+    chown -R caddy:caddy /etc/caddy
+    sudo mkdir -p /var/lib/caddy
+    sudo chown -R caddy:caddy /var/lib/caddy
 
-# Modify systemd service file to use environment variables
-mkdir -p /etc/systemd/system/caddy.service.d
-cat << 'EOFCADDY' | sudo tee /etc/systemd/system/caddy.service.d/override.conf  
+    # Modify systemd service file to use environment variables
+    mkdir -p /etc/systemd/system/caddy.service.d
+    cat << 'EOFCADDY' | sudo tee /etc/systemd/system/caddy.service.d/override.conf  
 [Service]
 Environment="CADDYPATH=/var/lib/caddy"
 Environment="XDG_DATA_HOME=/var/lib/caddy/.local/share"
@@ -715,11 +716,17 @@ EnvironmentFile=-/etc/caddy/caddy.env
 EnvironmentFile=-/etc/auth-shared/auth-shared.env
 EOFCADDY
 
-# start service
-systemd_restart "caddy"
+    # start service
+    systemd_restart "caddy"
+}
+
+setup_lldap
+setup_couchdb
+setup_authelia
+setup_caddy
 
 # Create databases
 for db in $DATABASES; do
-	echo "test $db"
-	database_create "$db"
+    echo "test $db"
+    database_create "$db"
 done
