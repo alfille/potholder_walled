@@ -118,7 +118,6 @@ maybe_make_user "lldap" "lldap"
 usermod -aG auth-shared lldap
 
 maybe_make_user "couchdb" "couchdb"
-usermod -aG auth-shared couchdb
 
 # AUTH-SHARED
 # shared auth between caddy and couchdb
@@ -126,28 +125,7 @@ usermod -aG auth-shared couchdb
 mkdir -p /etc/auth-shared
 chmod 750 /etc/auth-shared
 
-# Shared between couchdb and caddy:
-cat > /etc/auth-shared/auth-shared.env << EOFAUTH
-# Token shared by caddy and couchdb
-# owned bty group auth-shared
-# both authelia and couchdb must be members of auth-shared
-#
-# groupadd auth-shared
-# Add both service users to the group
-# usermod -aG auth-shared caddy
-# usermod -aG auth-shared couchdb
-#
-# Set ownership and permissions (readable only by owner & group)
-# chown -R auth-shared:auth-shared /etc/auth-shared
-# chmod 750 /etc/auth-shared
-# chmod 640 /etc/auth-shared/shared.env
-
-# Generated on $(date)
 COUCHDB_SECRET= $(random_string)
-EOFAUTH
-
-chown -R auth-shared:auth-shared /etc/auth-shared
-chmod 640 /etc/auth-shared/auth-shared.env
 
 # Shared between lldap and authelia:
 auth2=$(random_string)
@@ -186,12 +164,13 @@ DEBIAN_FRONTEND=noninteractive apt install -y couchdb
 # 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
 COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
 save_conf
+couchdb_conf="/opt/couchdb/etc/local.d/10-admin.ini"
 cat > /opt/couchdb/etc/local.d/10-admin.ini <<EOFCOUCHDB
 [admins]
 admin = ${COUCHDB_PASS}
 
 [chttpd_auth]
-secret = \${COUCHDB_SECRET}
+secret = ${COUCHDB_SECRET}
 authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
 x_auth_username = X-Auth-CouchDB-UserName
 x_auth_roles = X-Auth-CouchDB-Roles
@@ -199,7 +178,7 @@ x_auth_token = X-Auth-CouchDB-Token
 proxy_use_secret = false
 
 [couch_httpd_auth]
-secret = \${COUCHDB_SECRET}
+secret = ${COUCHDB_SECRET}
 
 [cors]
 headers = accept, authorization, content-type, origin, referer
@@ -472,7 +451,7 @@ couchdb.{$BASE_DOMAIN} {
         reverse_proxy localhost:5984 {
             header_up X-Auth-CouchDB-UserName "admin"
             header_up X-Auth-CouchDB-Roles "_admin"
-            header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
+            header_up X-Auth-CouchDB-Token {$COUCHDB_SECRET}
         }
     }
 }
@@ -526,7 +505,7 @@ couchdb-replication.{$BASE_DOMAIN} {
             header_up X-Real-IP {remote_host}
             header_up X-Auth-CouchDB-UserName {header.Remote-User}
             header_up X-Auth-CouchDB-Roles "member"
-            header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
+            header_up X-Auth-CouchDB-Token {$COUCHDB_SECRET}
         }
     }
 
@@ -573,6 +552,9 @@ APP_NAMES="$(echo "$DATABASES" | tr ' ' '|' )"
 
 # name of subdomain associated with each database
 APP_DOMAINS=$(for name in $DATABASES; do echo -n "$name.${FQDN} "; done)
+
+# Couchdb token
+COUCHDB_SECRET=${COUCHDB_SECRET}"
 EOFCADDYENV
 
 # Set standard secure file and directory permissions

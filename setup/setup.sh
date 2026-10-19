@@ -19,7 +19,7 @@ fi
 
 ## WHIPTAIL
 # get friendly TUI interface
-apt install --yes whiptail git curl
+apt install --yes whiptail git curl openssl
 
 ## ---------- Functions -------------------
 
@@ -169,10 +169,11 @@ database_create () {
 	  if echo "$RESPONSE" | grep -q '"ok":true'; then
 		echo "Database '$DB_NAME' created successfully."
 	  else
-		echo "Failed to create database: $RESPONSE"
-		exit 1
+		echo "Failed to create database $DB_NAME Error: $RESPONSE"
+		return 1
 	  fi
 	fi
+	return 0
 }
 
 ## ------- End of functions --------
@@ -249,7 +250,7 @@ cat > /etc/auth-shared/auth-shared.env << EOFAUTH
 # chmod 640 /etc/auth-shared/shared.env
 
 # Generated on $(date)
-COUCHDB_SECRET= $(random_string)
+COUCHDB_SECRET=$(random_string)
 EOFAUTH
 
 chown -R auth-shared:auth-shared /etc/auth-shared
@@ -274,6 +275,9 @@ EOFAUTH2
 chmod 640 /etc/auth-shared/auth-shared2.env
 
 ## COUCHDB
+echo "--------------"
+echo "   COUCHDB    "
+echo "--------------"
 # install
 apt install -y curl gnupg apt-transport-https
 curl -fsSL https://couchdb.apache.org/repo/keys.asc | gpg --dearmor --yes -o /usr/share/keyrings/couchdb-archive-keyring.gpg
@@ -292,20 +296,23 @@ DEBIAN_FRONTEND=noninteractive apt install -y couchdb
 # 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
 COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
 save_conf
-cat > /opt/couchdb/etc/local.d/10-admin.ini <<EOFCOUCHDB
+couchdb_ini="/opt/couchdb/etc/local.d/10-admin.ini"
+cat > "$couchdb_ini" <<EOFCOUCHDB
 [admins]
 admin = ${COUCHDB_PASS}
 
 [chttpd_auth]
-secret = \${COUCHDB_SECRET}
-authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
+#secret = ${COUCHDB_SECRET}
+#authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
+authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
 x_auth_username = X-Auth-CouchDB-UserName
 x_auth_roles = X-Auth-CouchDB-Roles
 x_auth_token = X-Auth-CouchDB-Token
-proxy_use_secret = false
+#proxy_use_secret = false
 
 [couch_httpd_auth]
-secret = \${COUCHDB_SECRET}
+proxy_use_secret = false
+#secret = ${COUCHDB_SECRET}
 
 [cors]
 headers = accept, authorization, content-type, origin, referer
@@ -319,14 +326,8 @@ port = 5984
 bind_address = 127.0.0.1
 authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
 EOFCOUCHDB
-chown couchdb:couchdb /opt/couchdb/etc/local.d/10-admin.ini
-
-# Modify systemd service file to use environment variables
-mkdir -p /etc/systemd/system/couchdb.service.d
-cat << 'EOFCOUCH' | tee /etc/systemd/system/caddy.service.d/override.conf  
-[Service]
-EnvironmentFile=-/etc/auth-shared/auth-shared.env
-EOFCOUCH
+chown couchdb:couchdb "$couchdb_ini"
+chmod 640 "$couchdb_ini"
 
 # Restart CouchDB to apply settings and trigger automatic password hashing
 systemd_restart "couchdb"
@@ -335,10 +336,12 @@ systemd_restart "couchdb"
 for db in $DATABASES; do
 	echo "test $db"
 	database_create "$db"
-	
 done
 
 ## LLDAP
+echo "--------------"
+echo "   LLDAP      "
+echo "--------------"
 # Download and install from the repository
 echo 'deb http://download.opensuse.org/repositories/home:/Masgalor:/LLDAP/Debian_13/ /' | tee /etc/apt/sources.list.d/home:Masgalor:LLDAP.list
 curl -fsSL https://download.opensuse.org/repositories/home:Masgalor:LLDAP/Debian_13/Release.key | gpg --dearmor --yes | tee /etc/apt/trusted.gpg.d/home_Masgalor_LLDAP.gpg > /dev/null
@@ -394,6 +397,9 @@ EOFLLDAP
 systemd_restart "lldap"
 
 ## AUTHELIA
+echo "--------------"
+echo "   AUTHELIA   "
+echo "--------------"
 #Install
 apt install ca-certificates curl gnupg
 curl -fsSL https://www.authelia.com/keys/authelia-security.gpg -o /usr/share/keyrings/authelia-security.gpg
@@ -526,6 +532,9 @@ EOFAUTHELIA
 systemd_restart "authelia"
 
 # CADDY
+echo "--------------"
+echo "   CADDY      "
+echo "--------------"
 # install caddy
 apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
 apt install caddy -y
@@ -585,7 +594,7 @@ couchdb.{$BASE_DOMAIN} {
         reverse_proxy localhost:5984 {
             header_up X-Auth-CouchDB-UserName "admin"
             header_up X-Auth-CouchDB-Roles "_admin"
-            header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
+            header_up X-Auth-CouchDB-Token
         }
     }
 }
@@ -639,7 +648,7 @@ couchdb-replication.{$BASE_DOMAIN} {
             header_up X-Real-IP {remote_host}
             header_up X-Auth-CouchDB-UserName {header.Remote-User}
             header_up X-Auth-CouchDB-Roles "member"
-            header_up X-Auth-CouchDB-Token "{$COUCHDB_SECRET}"
+            header_up X-Auth-CouchDB-Token
         }
     }
 
@@ -708,3 +717,9 @@ EOFCADDY
 
 # start service
 systemd_restart "caddy"
+
+# Create databases
+for db in $DATABASES; do
+	echo "test $db"
+	database_create "$db"
+done
