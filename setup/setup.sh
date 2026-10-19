@@ -24,7 +24,10 @@ apt install --yes whiptail git curl openssl
 ## ---------- Functions -------------------
 
 # repository
-repository() {
+setup_repository() {
+    echo "--------------"
+    echo "   Web Site   "
+    echo "--------------"
     if [ -d "/srv/potholder_walled" ]; then
         # Pull as www-data to preserve file ownership
         sudo -u www-data git -C "/srv/potholder_walled" pull
@@ -32,23 +35,6 @@ repository() {
         git -C "/srv" clone https://github.com/alfille/potholder_walled
         chown -R www-data:www-data /srv/potholder_walled
     fi
-}
-
-# configuration file update
-save_conf() {
-    cat > "$conf_file" << EOFCONF
-FQDN="$FQDN"
-DATABASES="$DATABASES"
-COUCHDB_PASS="$COUCHDB_PASS"
-LLDAP_PASS="$LLDAP_PASS"
-EOFCONF
-}
-
-# parse fully qualified domain name)
-fqdn_to_dc() {
-  local domain="${1%.}"          # Strip trailing dot if present
-  local dc="dc=${domain//./,dc=}" # Replace all '.' with ',dc='
-  echo $dc
 }
 
 # Create a random alphanumeric string
@@ -178,89 +164,91 @@ database_create () {
 
 ## ------- End of functions --------
 
-## GIT repository
-repository
-
 ## SAVED CONFIGURATION
-# saved under "/etc/potholder/conf.env"
+# configuration file update
 conf_file="/etc/potholder/conf.env"
-if [ ! -f "/etc/potholder/conf.env" ]; then
-    mkdir -p "$(dirname "$conf_file")"
-    touch "$conf_file"
-    chown root:root "$conf_file"
-    chmod 600 "$conf_file"
-    FQDN="$(hostname -f)"
-    DATABASES=""
-    COUCHDB_PASS=""
-    LLDAP=""
+save_conf() {
+    cat > "$conf_file" << EOFCONF
+FQDN="$FQDN"
+DATABASES="$DATABASES"
+COUCHDB_PASS="$COUCHDB_PASS"
+LLDAP_PASS="$LLDAP_PASS"
+EOFCONF
+}
+# parse fully qualified domain name)
+fqdn_to_dc() {
+    local domain="${1%.}"          # Strip trailing dot if present
+    local dc="dc=${domain//./,dc=}" # Replace all '.' with ',dc='
+    echo $dc
+}
+
+setup_configuration() {
+    echo "--------------"
+    echo "   CONFIG     "
+    echo "--------------"
+    if [ ! -f "$conf_file" ]; then
+        mkdir -p "$(dirname "$conf_file")"
+        touch "$conf_file"
+        chown root:root "$conf_file"
+        chmod 600 "$conf_file"
+        FQDN="$(hostname -f)"
+        DATABASES=""
+        COUCHDB_PASS=""
+        LLDAP=""
+        save_conf
+    fi
+    source "$conf_file"
+    if  [ -z "$FQDN" ]; then
+        FQDN="$(hostname -f)"
+    fi
+    if  [ -z "$DATABASES" ]; then
+        DATABASES="potholder"
+    fi
+
+    ## FQDN for server
+    FQDN=$(whiptail --title "Get the Server's External Address" --inputbox "Enter your FQDN:" 8 60 "$FQDN" 3>&1 1>&2 2>&3) || exit 1
     save_conf
-fi
-source "$conf_file"
-if  [ -z "$FQDN" ]; then
-    FQDN="$(hostname -f)"
-fi
-if  [ -z "$DATABASES" ]; then
-    DATABASES="potholder"
-fi
-
-## FQDN for server
-FQDN=$(whiptail --title "Get the Server's External Address" --inputbox "Enter your FQDN:" 8 60 "$FQDN" 3>&1 1>&2 2>&3) || exit 1
-save_conf
-DC=$(fqdn_to_dc $FQDN)
-
-## Databases
-DATABASES=$(whiptail --title "List the databases available" --inputbox "List of databases separated by space:" 8 60 "$DATABASES" 3>&1 1>&2 2>&3) || exit 1
-save_conf
+    DC=$(fqdn_to_dc $FQDN)
+    
+    ## Databases
+    DATABASES=$(whiptail --title "List the databases available" --inputbox "List of databases separated by space:" 8 60 "$DATABASES" 3>&1 1>&2 2>&3) || exit 1
+    save_conf
+}
 
 ## USERS
-maybe_make_user "auth-shared" "auth-shared"
+setup_users() {
+    echo "--------------"
+    echo "   USERS      "
+    echo "--------------"
+    maybe_make_user "auth-shared" "auth-shared"
 
-maybe_make_user "caddy" "caddy"
-usermod -aG auth-shared caddy
+    maybe_make_user "caddy" "caddy"
+    usermod -aG auth-shared caddy
 
-maybe_make_user "authelia" "authelia"
-usermod -aG auth-shared authelia
+    maybe_make_user "authelia" "authelia"
+    usermod -aG auth-shared authelia
 
-maybe_make_user "lldap" "lldap"
-usermod -aG auth-shared lldap
+    maybe_make_user "lldap" "lldap"
+    usermod -aG auth-shared lldap
 
-maybe_make_user "couchdb" "couchdb"
-usermod -aG auth-shared couchdb
+    maybe_make_user "couchdb" "couchdb"
+    usermod -aG auth-shared couchdb
+}
 
 # AUTH-SHARED
-# shared auth between caddy and couchdb
-# new secret generated each time and services restarted to pick it up
-mkdir -p /etc/auth-shared
-chmod 750 /etc/auth-shared
+setup_auth() {
+    # shared auth between caddy and couchdb
+    # new secret generated each time and services restarted to pick it up
+    echo "--------------"
+    echo "   SHARED     "
+    echo "--------------"
+    mkdir -p /etc/auth-shared
 
-# Shared between couchdb and caddy:
-cat > /etc/auth-shared/auth-shared.env << EOFAUTH
-# Token shared by caddy and couchdb
-# owned bty group auth-shared
-# both authelia and couchdb must be members of auth-shared
-#
-# groupadd auth-shared
-# Add both service users to the group
-# usermod -aG auth-shared caddy
-# usermod -aG auth-shared couchdb
-#
-# Set ownership and permissions (readable only by owner & group)
-# chown -R auth-shared:auth-shared /etc/auth-shared
-# chmod 750 /etc/auth-shared
-# chmod 640 /etc/auth-shared/shared.env
-
-# Generated on $(date)
-COUCHDB_SECRET=$(random_string)
-EOFAUTH
-
-chown -R auth-shared:auth-shared /etc/auth-shared
-chmod 640 /etc/auth-shared/auth-shared.env
-
-# Shared between lldap and authelia:
-auth2=$(random_string)
-LLDAP_PASS=$(get_password "User Manager (LLDAP)" "Set Admin password" "$LLDAP_PASS") || exit 1
-save_conf
-cat > /etc/auth-shared/auth-shared2.env << EOFAUTH2
+    # Shared between lldap and authelia:
+    auth2=$(random_string)
+    LLDAP_PASS=$(get_password "User Manager (LLDAP)" "Set Admin password" "$LLDAP_PASS") || exit 1
+    save_conf
+    cat > /etc/auth-shared/auth-shared2.env << EOFAUTH2
 # Token shared by authelia and lldap
 # these two must match
 LLDAP_JWT_SECRET="$auth2"
@@ -272,7 +260,10 @@ AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD="$LLDAP_PASS"
 LLDAP_LDAP_USER_PASS="$LLDAP_PASS"
 EOFAUTH2
 
-chmod 640 /etc/auth-shared/auth-shared2.env
+    chmod 750 /etc/auth-shared
+    chown -R auth-shared:auth-shared /etc/auth-shared
+    chmod 640 /etc/auth-shared/auth-shared2.env
+}
 
 ## COUCHDB
 setup_couchdb() {
@@ -303,7 +294,6 @@ EOFDEB
 admin = ${COUCHDB_PASS}
 
 [chttpd_auth]
-#secret = ${COUCHDB_SECRET}
 #authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
 authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
 x_auth_username = X-Auth-CouchDB-UserName
@@ -313,7 +303,6 @@ x_auth_token = X-Auth-CouchDB-Token
 
 [couch_httpd_auth]
 proxy_use_secret = false
-#secret = ${COUCHDB_SECRET}
 
 [cors]
 headers = accept, authorization, content-type, origin, referer
@@ -713,20 +702,29 @@ Environment="CADDYPATH=/var/lib/caddy"
 Environment="XDG_DATA_HOME=/var/lib/caddy/.local/share"
 Environment="XDG_CONFIG_HOME=/var/lib/caddy/.config"
 EnvironmentFile=-/etc/caddy/caddy.env
-EnvironmentFile=-/etc/auth-shared/auth-shared.env
 EOFCADDY
 
     # start service
     systemd_restart "caddy"
 }
 
+setup_databases() {
+    echo "--------------"
+    echo "   DATABASES  "
+    echo "--------------"
+    # Create databases
+    for db in $DATABASES; do
+        echo "test $db"
+        database_create "$db"
+    done
+}
+
+setup_repository
+setup_configuration
+setup_users
+setup_auth
 setup_lldap
 setup_couchdb
 setup_authelia
 setup_caddy
-
-# Create databases
-for db in $DATABASES; do
-    echo "test $db"
-    database_create "$db"
-done
+setup_databases
