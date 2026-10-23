@@ -283,7 +283,8 @@ EOFDEB
 
     # 2. Install CouchDB non-interactively
     apt update
-    local DEBIAN_FRONTEND=noninteractive apt install -y couchdb
+    local DEBIAN_FRONTEND
+    DEBIAN_FRONTEND=noninteractive apt install -y couchdb
 
     # 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
     COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
