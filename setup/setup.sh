@@ -325,6 +325,30 @@ EOFCOUCHDB
 }
 
 ## LLDAP
+lldap_add_group() {
+    local group_name="${1:-}"
+
+    # Run lldap-cli and capture both stdout and stderr
+    local output exit_code
+    output=$(lldap-cli -w $LLDAP_PASS group add "$group_name" 2>&1)
+    exit_code=$?
+
+    if [ $exit_code -eq 0 ]; then
+        echo "Success: Group '$group_name' created."
+        return 0
+    else
+        # Check if the failure is a benign "already exists" / unique constraint error
+        if echo "$output" | grep -qiE "unique|already exists|exist"; then
+            echo "Notice: Group '$group_name' already exists. Skipping."
+            return 0
+        else
+            echo "Error creating group '$group_name':" >&2
+            echo "$output" >&2
+            return 1
+        fi
+    fi
+}
+
 setup_lldap() {
     echo "--------------"
     echo "   LLDAP      "
@@ -382,8 +406,8 @@ EOFLLDAP
 
     ## restart lldap
     systemd_restart "lldap"
-    lldap-cli -w $LLDAP_PASS group add couchdb_admin
-    lldap-cli -w $LLDAP_PASS group add lldap_admin
+    lldap_add_group couchdb_admin
+    lldap_add_group lldap_admin
 }
 
 ## AUTHELIA
@@ -719,7 +743,7 @@ setup_databases() {
     for db in $DATABASES; do
         echo "test $db"
         database_create "$db"
-        lldap-cli -w $LLDAP_PASS group add $db
+        lldap_add_group "$db"
     done
 }
 
