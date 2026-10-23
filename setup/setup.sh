@@ -513,7 +513,7 @@ EOFAUTHELIAENV
 
     # Modify systemd service file to use environment variables
     mkdir -p /etc/systemd/system/authelia.service.d
-    cat << 'EOFAUTHELIA' | sudo tee /etc/systemd/system/authelia.service.d/override.conf  
+    cat > /etc/systemd/system/authelia.service.d/override.conf  << 'EOFAUTHELIA'  
 [Service]
 Environment="AUTHELIA_STORAGE_ENCRYPTION_KEY=lsdjfg;lsdkhglksdhglskjhgsdkhg"
 EnvironmentFile=-/etc/auth-shared/auth-shared2.env
@@ -699,7 +699,7 @@ EOFCADDYENV
 
     # Modify systemd service file to use environment variables
     mkdir -p /etc/systemd/system/caddy.service.d
-    cat << 'EOFCADDY' | sudo tee /etc/systemd/system/caddy.service.d/override.conf  
+    cat > /etc/systemd/system/caddy.service.d/override.conf << 'EOFCADDY'  
 [Service]
 Environment="CADDYPATH=/var/lib/caddy"
 Environment="XDG_DATA_HOME=/var/lib/caddy/.local/share"
