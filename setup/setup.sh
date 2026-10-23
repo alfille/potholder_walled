@@ -360,8 +360,8 @@ setup_lldap() {
     apt install -y lldap lldap-cli
 
     # Set up the environment
-    sudo mkdir -p /var/lib/lldap
-    sudo chown -R lldap:lldap /var/lib/lldap
+    mkdir -p /var/lib/lldap
+    chown -R lldap:lldap /var/lib/lldap
     mkdir -p /etc/lldap
     cat > /etc/lldap/lldap_config.toml << EOFLLDAPTOML
 ldap_host = "127.0.0.1"
@@ -533,7 +533,7 @@ EOFAUTHELIAENV
     chmod 644 /etc/authelia/*
 
     # database directory
-    sudo install -d -m 0750 -o authelia -g authelia /var/lib/authelia
+    install -d -m 0750 -o authelia -g authelia /var/lib/authelia
 
     # Modify systemd service file to use environment variables
     mkdir -p /etc/systemd/system/authelia.service.d
@@ -718,8 +718,8 @@ EOFCADDYENV
     chmod 755 /etc/caddy
     chmod 644 /etc/caddy/*
     chown -R caddy:caddy /etc/caddy
-    sudo mkdir -p /var/lib/caddy
-    sudo chown -R caddy:caddy /var/lib/caddy
+    mkdir -p /var/lib/caddy
+    chown -R caddy:caddy /var/lib/caddy
 
     # Modify systemd service file to use environment variables
     mkdir -p /etc/systemd/system/caddy.service.d
