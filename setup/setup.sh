@@ -194,7 +194,7 @@ setup_configuration() {
         FQDN="$(hostname -f)"
         DATABASES=""
         COUCHDB_PASS=""
-        LLDAP=""
+        LLDAP_PASS=""
         save_conf
     fi
     source "$conf_file"
@@ -333,7 +333,7 @@ setup_lldap() {
     echo 'deb http://download.opensuse.org/repositories/home:/Masgalor:/LLDAP/Debian_13/ /' | tee /etc/apt/sources.list.d/home:Masgalor:LLDAP.list
     curl -fsSL https://download.opensuse.org/repositories/home:Masgalor:LLDAP/Debian_13/Release.key | gpg --dearmor --yes | tee /etc/apt/trusted.gpg.d/home_Masgalor_LLDAP.gpg > /dev/null
     apt update
-    apt install lldap
+    apt install -y lldap lldap-cli
 
     # Set up the environment
     sudo mkdir -p /var/lib/lldap
@@ -382,6 +382,8 @@ EOFLLDAP
 
     ## restart lldap
     systemd_restart "lldap"
+    lldap-cli -w $LLDAP_PASS group add couchdb_admin
+    lldap-cli -w $LLDAP_PASS group add lldap_admin
 }
 
 ## AUTHELIA
@@ -717,6 +719,7 @@ setup_databases() {
     for db in $DATABASES; do
         echo "test $db"
         database_create "$db"
+        lldap-cli -w $LLDAP_PASS group add $db
     done
 }
 
