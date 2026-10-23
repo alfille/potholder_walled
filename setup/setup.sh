@@ -477,8 +477,8 @@ session:
   inactivity: '12h'
   remember_me: '1M'
   cookies:
-    - domain: 'int.alfille.org'
-      authelia_url: 'https://auth.int.alfille.org'
+    - domain: '$FQDN'
+      authelia_url: 'https://auth.$FQDN'
 ##
 ## Storage Provider Configuration
 storage:
