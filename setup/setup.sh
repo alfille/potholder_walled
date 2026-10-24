@@ -215,6 +215,33 @@ setup_configuration() {
     save_conf
 }
 
+setup_host() {
+    echo "--------------"
+    echo "   HOSTNAME   "
+    echo "--------------"
+    source $conf_file # just in case
+    
+    if [ -z "$FQDN" ]; then
+        echo "Error: FQDN must be set (e.g., server.example.net)" >&2
+        exit 1
+    fi
+
+    # Extract the short name dynamically from the FQDN (everything before the first dot)
+    local short_name="${FQDN%%.*}"
+    local ip="127.0.1.1"
+
+    # 1. Set hostname via hostnamectl if it doesn't match
+    if [ "$(hostname -s)" != "$short_name" ]; then
+        hostnamectl set-hostname "$short_name"
+        echo "Set system hostname to: $short_name"
+    fi
+
+    # 2. Update /etc/hosts idempotently
+    sed -i "/\b$short_name\b/d" /etc/hosts
+    echo -e "$ip\t$FQDN\t$short_name" | sudo tee -a /etc/hosts > /dev/null
+    echo "Configured /etc/hosts for $FQDN ($short_name)"
+}
+
 ## USERS
 setup_users() {
     echo "--------------"
@@ -749,6 +776,7 @@ setup_databases() {
 
 setup_repository
 setup_configuration
+setup_host
 setup_users
 setup_auth
 setup_lldap
