@@ -353,7 +353,6 @@ EOFCOUCHDB
 ## LLDAP
 lldap_add_group() {
     local group_name="${1:-}"
-    echo "Attenpting to add lldap group $group_name"
 
     # Run lldap-cli and capture both stdout and stderr
     local output exit_code
@@ -433,8 +432,6 @@ EOFLLDAP
 
     ## restart lldap
     systemd_restart "lldap"
-    lldap_add_group couchdb_admin
-    lldap_add_group lldap_admin
 }
 
 ## AUTHELIA
@@ -760,10 +757,14 @@ EOFCADDY
     systemd_restart "caddy"
 }
 
+# Needs all services to be running by now 
 setup_databases() {
     echo "--------------"
     echo "   DATABASES  "
     echo "--------------"
+    # Create lldap users
+    lldap_add_group couchdb_admin
+    lldap_add_group lldap_admin
     # Create databases
     for db in $DATABASES; do
         echo "test $db"
