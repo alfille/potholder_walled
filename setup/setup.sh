@@ -353,6 +353,7 @@ EOFCOUCHDB
 ## LLDAP
 lldap_add_group() {
     local group_name="${1:-}"
+    echo "Attenpting to add lldap group $group_name"
 
     # Run lldap-cli and capture both stdout and stderr
     local output exit_code
@@ -364,7 +365,7 @@ lldap_add_group() {
         return 0
     else
         # Check if the failure is a benign "already exists" / unique constraint error
-        if echo "$output" | grep -qiE "unique|already exists|exist"; then
+        if echo "$output" | grep -qiE "unique|already exists|exist|2067"; then
             echo "Notice: Group '$group_name' already exists. Skipping."
             return 0
         else
