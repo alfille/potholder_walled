@@ -589,11 +589,11 @@ setup_caddy() {
     # Create Caddyfile
     mkdir -p /etc/caddy
 
-    cat > /etc/caddy/Caddyfile << 'EOFCADDYFILE'
+cat > /etc/caddy/Caddyfile << 'EOFCADDYFILE'
 # Caddyfile
 
 # Reverse proxy to Authelia
-auth.{env.BASE_DOMAIN} {
+auth.{$BASE_DOMAIN} {
     handle {
         reverse_proxy 127.0.0.1:9091
     }
@@ -608,7 +608,7 @@ auth.{env.BASE_DOMAIN} {
 }
 
 # lldap web admin -- security there
-lldap.{env.BASE_DOMAIN} {
+lldap.{$BASE_DOMAIN} {
     # Reverse proxy to the LLDAP Web UI port
     reverse_proxy localhost:17170
     # Recommended security headers
@@ -620,7 +620,7 @@ lldap.{env.BASE_DOMAIN} {
 }
 
 # Couchdb Fauxton (admin console) access
-couchdb.{env.BASE_DOMAIN} {
+couchdb.{$BASE_DOMAIN} {
     log {
         output stdout
         format console
@@ -629,7 +629,6 @@ couchdb.{env.BASE_DOMAIN} {
     @to_util {
         path /
         query "" 
-        #vars_regexp {query} ^$
     }
 
     redir @to_util /_utils/ 302
@@ -643,7 +642,7 @@ couchdb.{env.BASE_DOMAIN} {
     }
 }
 
-couchdb-replication.{env.BASE_DOMAIN} {
+couchdb-replication.{$BASE_DOMAIN} {
     log {
         output stdout
         format console
@@ -678,8 +677,6 @@ couchdb-replication.{env.BASE_DOMAIN} {
         rewrite * /api/authz/forward-auth
         reverse_proxy 127.0.0.1:9091 {
             header_up X-Forwarded-Method GET
-            header_up X-Forwarded-Proto {scheme}
-            header_up X-Forwarded-Host {host}
             header_up X-Forwarded-Uri /
         }
     }
@@ -696,7 +693,7 @@ couchdb-replication.{env.BASE_DOMAIN} {
         }
     }
 
-    # 5. User Identity endpoint (fixed double slash typo)
+    # 5. User Identity endpoint
     handle /api/me {
         header Content-Type application/json
 
@@ -706,7 +703,7 @@ couchdb-replication.{env.BASE_DOMAIN} {
         respond `{"username": "{header.Remote-User}", "name": "{header.Remote-Name}", "email": "{header.Remote-Email}", "groups": "{header.Remote-Groups}"}` 200
     }
 
-    # 6. Static File Server (Bypassed static assets land here directly)
+    # 6. Static File Server
     handle {
         root * /srv/potholder_walled
         encode gzip zstd
@@ -714,16 +711,16 @@ couchdb-replication.{env.BASE_DOMAIN} {
     }
 }
 
-# Domain for each database
-{env.APP_DOMAINS} {
+# Domain for each database (Caddy expands space-separated domains automatically)
+{$APP_DOMAINS} {
     import couchdb_db
 }
 
-{env.BASE_DOMAIN} {
+{$BASE_DOMAIN} {
     redir / /index.html 302
 
     @dbname {
-        path_regexp db ^/({env.APP_NAMES})(?:/(.*))?$
+        path_regexp db ^/({$APP_NAMES})(?:/(.*))?$
     }
     redir @dbname https://{re.db.1}.{$BASE_DOMAIN}/{re.db.2} 302
 
