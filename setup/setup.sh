@@ -159,6 +159,20 @@ database_create () {
         return 1
       fi
     fi
+
+    #replication user
+    curl -u "admin:YOUR_COUCHDB_PASS" -X PUT http://127.0.0.1:5984/$DB_NAME/_security \
+        -H "Content-Type: application/json" \
+        -d '{
+            "admins": {
+                "names": ["admin"],
+                "roles": ["_admin"]
+            },
+            "members": {
+                "names": ["replicator"],
+                "roles": ["$DB_NAME", "replicator_role"]
+            }
+        }'
     return 0
 }
 
@@ -172,6 +186,7 @@ save_conf() {
 FQDN="$FQDN"
 DATABASES="$DATABASES"
 COUCHDB_PASS="$COUCHDB_PASS"
+REPLICATION_PASS="$REPLICATION_PASS"
 LLDAP_PASS="$LLDAP_PASS"
 EOFCONF
 }
@@ -194,6 +209,7 @@ setup_configuration() {
         FQDN="$(hostname -f)"
         DATABASES=""
         COUCHDB_PASS=""
+        REPLICATION_PASS=""
         LLDAP_PASS=""
         save_conf
     fi
@@ -315,6 +331,8 @@ EOFDEB
 
     # 3. Write configuration directly to /opt/couchdb/etc/local.d/10-admin.ini
     COUCHDB_PASS=$(get_password "CouchDB Administrator" "Select an admin password" "$COUCHDB_PASS")
+    save_conf
+    REPLICATION_PASS=$(get_password "CouchDB Replication" "Select a password for remote database replication" "$COUCHDB_PASS")
     save_conf
     local couchdb_ini="/opt/couchdb/etc/local.d/10-admin.ini"
     cat > "$couchdb_ini" <<EOFCOUCHDB
@@ -765,6 +783,7 @@ setup_databases() {
     # Create lldap users
     lldap_add_group couchdb_admin
     lldap_add_group lldap_admin
+
     # Create databases
     for db in $DATABASES; do
         echo "test $db"
