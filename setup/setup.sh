@@ -327,7 +327,6 @@ authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {cht
 x_auth_username = X-Auth-CouchDB-UserName
 x_auth_roles = X-Auth-CouchDB-Roles
 x_auth_token = X-Auth-CouchDB-Token
-#proxy_use_secret = false
 
 [couch_httpd_auth]
 proxy_use_secret = false
@@ -339,7 +338,7 @@ origins = *
 credentials = true
 
 [chttpd]
-enable_cors = false
+enable_cors = true
 port = 5984
 bind_address = 127.0.0.1
 authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, proxy_authentication_handler}, {chttpd_auth, default_authentication_handler}
@@ -594,7 +593,7 @@ setup_caddy() {
 # Caddyfile
 
 # Reverse proxy to Authelia
-auth.{$BASE_DOMAIN} {
+auth.{env.BASE_DOMAIN} {
     handle {
         reverse_proxy 127.0.0.1:9091
     }
@@ -609,7 +608,7 @@ auth.{$BASE_DOMAIN} {
 }
 
 # lldap web admin -- security there
-lldap.{$BASE_DOMAIN} {
+lldap.{env.BASE_DOMAIN} {
     # Reverse proxy to the LLDAP Web UI port
     reverse_proxy localhost:17170
     # Recommended security headers
@@ -621,7 +620,7 @@ lldap.{$BASE_DOMAIN} {
 }
 
 # Couchdb Fauxton (admin console) access
-couchdb.{$BASE_DOMAIN} {
+couchdb.{env.BASE_DOMAIN} {
     log {
         output stdout
         format console
@@ -629,7 +628,8 @@ couchdb.{$BASE_DOMAIN} {
     import authelia_auth
     @to_util {
         path /
-        vars_regexp {query} ^$
+        query "" 
+        #vars_regexp {query} ^$
     }
 
     redir @to_util /_utils/ 302
@@ -638,12 +638,12 @@ couchdb.{$BASE_DOMAIN} {
         reverse_proxy localhost:5984 {
             header_up X-Auth-CouchDB-UserName "admin"
             header_up X-Auth-CouchDB-Roles "_admin"
-            header_up X-Auth-CouchDB-Token
+            header_up X-Auth-CouchDB-Token ""
         }
     }
 }
 
-couchdb-replication.{$BASE_DOMAIN} {
+couchdb-replication.{env.BASE_DOMAIN} {
     log {
         output stdout
         format console
@@ -692,7 +692,7 @@ couchdb-replication.{$BASE_DOMAIN} {
             header_up X-Real-IP {remote_host}
             header_up X-Auth-CouchDB-UserName {header.Remote-User}
             header_up X-Auth-CouchDB-Roles "member"
-            header_up X-Auth-CouchDB-Token
+            header_up X-Auth-CouchDB-Token ""
         }
     }
 
@@ -715,15 +715,15 @@ couchdb-replication.{$BASE_DOMAIN} {
 }
 
 # Domain for each database
-{$APP_DOMAINS} {
+{env.APP_DOMAINS} {
     import couchdb_db
 }
 
-{$BASE_DOMAIN} {
+{env.BASE_DOMAIN} {
     redir / /index.html 302
 
     @dbname {
-        path_regexp db ^/({$APP_NAMES})(?:/(.*))?$
+        path_regexp db ^/({env.APP_NAMES})(?:/(.*))?$
     }
     redir @dbname https://{re.db.1}.{$BASE_DOMAIN}/{re.db.2} 302
 
@@ -732,14 +732,12 @@ couchdb-replication.{$BASE_DOMAIN} {
 }
 EOFCADDYFILE
 
-    cat > /etc/caddy/caddy.env << EOFCADDYENV
-BASE_DOMAIN="${FQDN}"
-# list of couchdb databases
-APP_NAMES="$(echo "$DATABASES" | tr ' ' '|' )"
+    local BASE_DOMAIN="${FQDN}"
+    # list of couchdb databases
+    local APP_NAMES="$(echo "$DATABASES" | tr ' ' '|' )"
 
-# name of subdomain associated with each database
-APP_DOMAINS=$(for name in $DATABASES; do echo -n "$name.${FQDN} "; done)
-EOFCADDYENV
+    # name of subdomain associated with each database
+    local APP_DOMAINS=$(for name in $DATABASES; do echo -n "$name.${FQDN} "; done)
 
     # Set standard secure file and directory permissions
     chmod 755 /etc/caddy
@@ -750,12 +748,14 @@ EOFCADDYENV
 
     # Modify systemd service file to use environment variables
     mkdir -p /etc/systemd/system/caddy.service.d
-    cat > /etc/systemd/system/caddy.service.d/override.conf << 'EOFCADDY'  
+    cat > /etc/systemd/system/caddy.service.d/override.conf << EOFCADDY  
 [Service]
 Environment="CADDYPATH=/var/lib/caddy"
 Environment="XDG_DATA_HOME=/var/lib/caddy/.local/share"
 Environment="XDG_CONFIG_HOME=/var/lib/caddy/.config"
-EnvironmentFile=-/etc/caddy/caddy.env
+Environment="BASE_DOMAIN=$BASE_DOMAIN"
+Environment="APP_NAMES=$APP_NAMES"
+Environment="APP_DOMAINS=$APP_DOMAINS"
 EOFCADDY
 
     # start service
