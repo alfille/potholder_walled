@@ -785,6 +785,8 @@ setup_databases() {
     lldap_add_group lldap_admin
 
     # Create databases
+    database_create "_security"
+    database_create "_users"
     for db in $DATABASES; do
         echo "test $db"
         database_create "$db"
