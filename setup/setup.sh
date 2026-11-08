@@ -162,35 +162,14 @@ database_create () {
       fi
     fi
 
-    #replication user
-    curl -u "admin:YOUR_COUCHDB_PASS" -X PUT http://127.0.0.1:5984/$DB_NAME/_security \
-        -H "Content-Type: application/json" \
-        -d '{
-            "admins": {
-                "names": ["admin"],
-                "roles": ["_admin"]
-            },
-            "members": {
-                "names": ["replicator"],
-                "roles": ["$DB_NAME", "replicator_role"]
-            }
-        }'
     return 0
 }
 database_security () {
 	local database="$1"
-	curl -X PUT http://admin:${COUCHBD_PASS}@127.0.0.1:5984/${database}/_security \
+	curl -s -X PUT http://127.0.0.1:5984/mydb/_security \
 		-H "Content-Type: application/json" \
-		-d '{
-				"admins": {
-				 "names": ["admin"],
-				 "roles": []
-			},
-				"members": {
-				 "names": ["member"],
-				 "roles": []
-			}
-		}'
+		-d '{"admins": {"names": ["admin"], "roles": []}, "members": {"member": [], "roles": []}}' \
+		| jq '.'
 }
 
 ## ------- End of functions --------
