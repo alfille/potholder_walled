@@ -167,7 +167,6 @@ database_create () {
 database_security () {
     local database="$1"
     local payload='{"admins":{"names":["admin"],"roles":[]},"members":{"names":["member"],"roles":[]}}'
-    echo "http://admin:${COUCHDB_PASS}@127.0.0.1:5984/${database}/_security"
     curl -s -X PUT http://admin:${COUCHDB_PASS}@127.0.0.1:5984/${database}/_security -H "Content-Type: application/json" -d ${payload} | jq '.'
 }
 
