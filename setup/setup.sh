@@ -165,11 +165,11 @@ database_create () {
     return 0
 }
 database_security () {
-	local database="$1"
-	curl -s -X PUT http://admin:${COUCHDB_PASS}@127.0.0.1:5984/${database}/_security \
-		-H "Content-Type: application/json" \
-		-d '{"admins": {"names": ["admin"], "roles": []}, "members": {["member"]: [], "roles": []}}' \
-		| jq '.'
+    local database="$1"
+    curl -s -X PUT http://admin:${COUCHDB_PASS}@127.0.0.1:5984/${database}/_security \
+        -H "Content-Type: application/json" \
+        -d '{"admins": {"names": ["admin"], "roles": []}, "members": {["member"]: [], "roles": []}}' \
+        | jq '.'
 }
 
 ## ------- End of functions --------
@@ -829,9 +829,9 @@ setup_databases() {
     
     # Create couchdb users
     database_create "_users"
-	couchdb_upsert_user "member"
-	couchdb_upsert_user "admin"
-	
+    couchdb_upsert_user "member"
+    couchdb_upsert_user "admin"
+    
     # Create databases
     for db in $DATABASES; do
         echo "test $db"
