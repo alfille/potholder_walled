@@ -437,9 +437,9 @@ EOFCOUCHDB
 lldap_add_group() {
     local group_name="${1:-}"
 
-    # Run lldap-cli and capture both stdout and stderr
     local output exit_code
-    output=$(lldap-cli -w $LLDAP_PASS group add "$group_name" 2>&1)
+    # Explicitly pass admin user (-D admin) and quote the password
+    output=$(lldap-cli -D admin -w "$LLDAP_PASS" group add "$group_name" 2>&1)
     exit_code=$?
 
     if [ $exit_code -eq 0 ]; then
@@ -457,7 +457,6 @@ lldap_add_group() {
         fi
     fi
 }
-
 setup_lldap() {
     echo "--------------"
     echo "   LLDAP      "
