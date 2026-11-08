@@ -166,7 +166,7 @@ database_create () {
 }
 database_security () {
 	local database="$1"
-	curl -s -X PUT http://127.0.0.1:5984/mydb/_security \
+	curl -s -X PUT http://127.0.0.1:5984/${database}/_security \
 		-H "Content-Type: application/json" \
 		-d '{"admins": {"names": ["admin"], "roles": []}, "members": {"member": [], "roles": []}}' \
 		| jq '.'
