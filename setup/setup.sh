@@ -44,6 +44,7 @@ random_string() {
 }
 
 # Create a group if needed
+# This is an operative system group
 maybe_make_group() {
     local group="$1"
 
@@ -65,6 +66,7 @@ maybe_make_group() {
 }
 
 # create user [group] if needed:
+# This is an operating system user
 maybe_make_user() {
     local user="$1"
     local group="${2:-}"  # Optional second argument for primary group
@@ -174,6 +176,21 @@ database_create () {
             }
         }'
     return 0
+}
+database_security () {
+	local database="$1"
+	curl -X PUT http://admin:${COUCHBD_PASS}@127.0.0.1:5984/${database}/_security \
+		-H "Content-Type: application/json" \
+		-d '{
+				"admins": {
+				 "names": ["admin"],
+				 "roles": []
+			},
+				"members": {
+				 "names": ["member"],
+				 "roles": []
+			}
+		}'
 }
 
 ## ------- End of functions --------
@@ -309,6 +326,53 @@ EOFAUTH2
 }
 
 ## COUCHDB
+couchdb_upsert_user() {
+    local username="$1"
+    local password="$REPLICATION_PASS"
+    local roles="[]"
+
+    # Configuration (adjust or set via environment variables)
+    local host="${COUCHDB_HOST:-127.0.0.1:5984}"
+
+    local doc_id="org.couchdb.user:$username"
+    # URL-encode the colon in the doc ID for the HTTP path
+    local url="http://admin:${COUCHDB_PASS}@${host}/_users/org.couchdb.user%3A${username}"
+
+    # 1. Check if the user document already exists
+    local existing_doc
+    existing_doc=$(curl -s "$url")
+
+    local payload
+    if echo "$existing_doc" | jq -e '.error == "not_found"' >/dev/null 2>&1; then
+        echo "--> User '$username' not found. Creating new user..."
+        # Build payload for a new document (no _rev)
+        payload=$(jq -n \
+            --arg id "$doc_id" \
+            --arg name "$username" \
+            --arg pass "$password" \
+            --argjson roles "$roles" \
+            '{_id: $id, name: $name, type: "user", roles: $roles, password: $pass}')
+    else
+        # Extract current revision if user exists
+        local rev
+        rev=$(echo "$existing_doc" | jq -r '._rev // empty')
+        echo "--> User '$username' exists (rev: $rev). Resetting password..."
+        
+        # Build payload for an update (requires existing _rev)
+        payload=$(jq -n \
+            --arg id "$doc_id" \
+            --arg rev "$rev" \
+            --arg name "$username" \
+            --arg pass "$password" \
+            --argjson roles "$roles" \
+            '{_id: $id, _rev: $rev, name: $name, type: "user", roles: $roles, password: $pass}')
+    fi
+
+    # 2. Send the PUT request to CouchDB
+    curl -s -X PUT "$url" \
+         -H "Content-Type: application/json" \
+         -d "$payload" | jq '.'
+}
 setup_couchdb() {
     echo "--------------"
     echo "   COUCHDB    "
@@ -369,6 +433,7 @@ EOFCOUCHDB
 }
 
 ## LLDAP
+# Add an lldap group
 lldap_add_group() {
     local group_name="${1:-}"
 
@@ -783,13 +848,17 @@ setup_databases() {
     # Create lldap users
     lldap_add_group couchdb_admin
     lldap_add_group lldap_admin
-
-    # Create databases
-    database_create "_security"
+    
+    # Create couchdb users
     database_create "_users"
+	couchdb_upsert_user "member"
+	couchdb_upsert_user "admin"
+	
+    # Create databases
     for db in $DATABASES; do
         echo "test $db"
         database_create "$db"
+        database_security "$db"
         lldap_add_group "$db"
     done
 }
